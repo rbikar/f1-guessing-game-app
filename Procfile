@@ -1,1 +1,1 @@
-web: gunicorn "app.factory:create_app()" -w 1 --bind 0.0.0.0:80
+web: gunicorn "app.factory:create_app()" -w 4 --bind 0.0.0.0:80
