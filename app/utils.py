@@ -30,7 +30,7 @@ def date_or_none(date):
     date = date.replace(tzinfo=pytz.utc)
     date = date.astimezone(pytz.timezone("Europe/Prague"))
 
-    return date.strftime("%d.%m %H:%M")
+    return date.strftime("%d.%m. %H:%M")
 
 
 def get_locks_race(race):
