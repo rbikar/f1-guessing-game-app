@@ -1,0 +1,96 @@
+
+
+
+{% macro build_driver_select(label, id, drivers, guess) %}
+{{ form_item_start(label, false) }}
+                <div class="select" default="">
+                    <select id={{ id }} name={{ id}}>
+                        <option value="" selected disabled hidden>---</option>
+                        {% for driver in drivers %}
+                        <option value={{driver}} 
+                        {% if driver == guess %} selected {% endif %}>{{driver}}</option>
+                        {% endfor %}
+                    </select>
+                </div>        
+{{ form_item_end() }}
+{% endmacro %}
+
+
+{% macro form_item_start(label, grouped) %}
+<div class="field is-horizontal {% if grouped %} is-grouped-centered {% endif %}">
+    <div class="field-label is-normal">
+        <label class="label">{{ label }}</label>
+    </div>
+    
+    <div class="field-body">
+        <div class="field">
+            <p class="control">
+
+
+{% endmacro %}
+
+
+{% macro form_item_end() %}
+</p>
+</div>
+</div>
+</div>
+{% endmacro %}
+
+
+{% macro build_safety_car(label, limit, guess) %}
+{{ form_item_start(label, false) }}
+<div class="select">
+    <select id="safety_car" name="safety_car">
+        
+        {% for value in range(0, limit) %}
+        <option value={{value}} 
+        {% if value == guess %} selected {% endif %}>{{value}}</option>
+        <option value="" {% if value is none %} selected {% endif %} disabled hidden>---</option>
+        {% endfor %}
+    </select>
+
+</div>
+{{ form_item_end() }}
+{% endmacro %}
+
+
+{% macro build_bonus(label, guess) %}
+{{ form_item_start(label, false) }}
+<input class="input" type="text" placeholder="BONUSOVKA" id="bonus" name="bonus"
+ value="{% if guess %}{{guess}}{% endif %}">
+</input>
+{{ form_item_end() }}
+{% endmacro %}
+
+
+{% macro build_submit(label) %}
+{{ form_item_start("", true) }}
+<input class="button is-danger is-large is-fullwidth" type="submit" value={{label}}>
+{{ form_item_end() }}
+{% endmacro %}
+
+
+{% macro build_cancel(label) %}
+{{ form_item_start("", true) }}
+<input class="button is-success is-large is-fullwidth" type="reset" value={{label}}>
+{{ form_item_end() }}
+{% endmacro %}
+
+
+
+{% macro build_row(race, selected) %}
+
+<tr {% if selected %} class=is-selected {% endif %}>
+    <th><a href="{{ url_for('main.race', short_name=race.short_name) }}">{{race.name}}</td>
+    <td> {{race.q}} </td>
+    <td> {{race.s}} </td>
+    <td> {{race.r}} </td>
+    
+</tr>
+
+{% endmacro %}
+
+
+
+

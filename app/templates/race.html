@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="title">
+{{race.name}}
+
+</h1>
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+    <div  class="notification is-success">
+         {{ messages[0] }}
+    </div>
+{% endif %}
+{% endwith %}
+{% from "driver_select.html" import build_driver_select, build_safety_car, build_bonus, build_submit, build_cancel %}
+
+
+<form method="POST" action="/race/{{race.short_name}}">
+
+<fieldset {%if  locks.quali_start %} disabled {% endif %} style="margin: 15px; border: none; ">
+{{ build_driver_select("Kvalda", "quali", drivers, guess.quali) }}
+</fieldset>
+{% if race_type == "SPRINT" %}
+<fieldset {%if  locks.sprint_start %} disabled {% endif %} style="margin: 15px; border: none; ">
+{{ build_driver_select("Vítěz sprintu", "sprint", drivers, guess.sprint) }}
+</fieldset>
+{% endif %}
+<fieldset {%if locks.race_start %} disabled {% endif %} style="margin: 15px; border: none; ">
+
+{{ build_driver_select("Vítěz závodu", "first", drivers, guess.first) }}
+{{ build_driver_select("Druhe misto", "second", drivers, guess.second) }}
+{{ build_driver_select("Treti misto", "third", drivers, guess.third) }}
+{{ build_driver_select("Nejrychlejší kolo", "fastest_lap", drivers, guess.fastest_lap) }}
+{{ build_safety_car("Safety car", 15,  guess.safety_car) }}
+{{ build_bonus("Bonus", guess.bonus) }}
+
+{{ build_submit("Uložit") }}
+{{ build_cancel("Storno") }}
+</fieldset>
+
+
+</form>
+</div>
+</div>
+
+{% endblock %}

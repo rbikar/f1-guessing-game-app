@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% from "driver_select.html" import build_row %}
+
+<table class="table">
+    <thead>
+        <tr>
+            {% for cell in table_head %}
+            <th> {{cell}} </th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows.finished %}
+        {{ build_row(row, false) }}
+        {% endfor %}
+        {% for row in rows.current %}
+        {{  build_row(row, true) }}
+        {% endfor %}
+        {% for row in rows.upcoming %}
+        {{  build_row(row, false) }}
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
