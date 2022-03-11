@@ -2,10 +2,8 @@ import json
 import os
 from datetime import datetime, timedelta
 from distutils.command.config import config
-
 from flask import Flask, session
 from flask_login import LoginManager
-
 import app.models
 from app import db
 
@@ -63,6 +61,14 @@ def get_db_url():
 
     return f"postgresql+psycopg2://{ PGUSER }:{ PGPASSWORD }@{ PGHOST }:{ PGPORT }/{ PGDATABASE }"
 
+def db_exists(database_url):
+    try:
+        if sqlalchemy_utils.database_exists(database_url):
+            return True
+    except:
+        pass
+
+    return False
 
 def load_races():
     with open("app/data/races.json", "r") as f:
