@@ -63,7 +63,7 @@ def race(short_name):
         .filter(RaceGuess.user_id == current_user.id)
         .first()
     )
-    bonus = db.session.query(BonusGuess).filter(RaceGuess.race_id == race.id).first()
+    bonus = db.session.query(BonusGuess).filter(BonusGuess.race_id == race.id).first()
     locks = get_locks_race(race)
     start_times = {
         "q_start": date_or_none(race.quali_start),
@@ -307,3 +307,15 @@ def guess_overview():
     return render_template(
         "guess_overview.html", data=data, table_head=table_head, rows=rows
     )
+
+
+@main.route("/guess_overview/race")
+@login_required
+def guess_overview_race():
+    return render_template("wip.html")
+
+
+@main.route("/guess_overview/season")
+@login_required
+def guess_overview_season():
+    return render_template("wip.html")

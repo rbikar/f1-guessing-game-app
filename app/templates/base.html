@@ -11,63 +11,76 @@
 </head>
 
 <body>
-    <section class="hero is-large is-info">
+    <nav class="navbar is-dark">
+        <div class="container">
+            <div class="navbar-brand">
+                <a class="navbar-item" href="{{ url_for('main.index') }}">
+                    Ultimátní tipovačka F1 2022
+                </a>
 
-        <div class="hero-head">
-            <nav class="navbar">
-                <div class="container">
-                    <div class="navbar-brand">
-                        <a class="navbar-item" href="{{ url_for('main.index') }}">
-                            Ultimátní tipovačka F1 2022
-                        </a>
-                    </div>
-                    <a role="button" class="navbar-burger" id="burger"  aria-label="menu" aria-expanded="false" data-target="navbarMenuHeroA">
-                        <span aria-hidden="true"></span>
-                        <span aria-hidden="true"></span>
-                        <span aria-hidden="true"></span>
+                <a role="button" class="navbar-burger" id="burger"  aria-label="menu" aria-expanded="false" data-target="navbarMenuHeroA">
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
 
+                </a>
+            </div>
+
+            <div id="navbarMenuHeroA" class="navbar-menu ">
+                <div class="navbar-end">
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('main.race_current') }}" class="navbar-item">
+                        Aktuální tip
                     </a>
-                    <div id="navbarMenuHeroA" class="navbar-menu">
-                        <div class="navbar-end">
-                            {% if current_user.is_authenticated %}
-                            <a href="{{ url_for('main.race_current') }}" class="navbar-item">
-                                Aktuální tip
-                            </a>
-                            {% endif %}
-                            {% if current_user.is_authenticated %}
-                            <a href="{{ url_for('main.season') }}" class="navbar-item">
-                                Tip na sezónu
-                            </a>
-                            {% endif %}
-                            {% if current_user.is_authenticated %}
-                            <a href="{{ url_for('main.races') }}" class="navbar-item">
-                                Seznam závodů
-                            </a>
-                            {% endif %}
-                            {% if not current_user.is_authenticated %}
-                            <a href="{{ url_for('auth.login') }}" class="navbar-item">
-                                Přihlásit
-                            </a>
-                            <a href="{{ url_for('auth.signup') }}" class="navbar-item">
-                                Registrovat
-                            </a>
-                            {% endif %}
+                    {% endif %}
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('main.season') }}" class="navbar-item">
+                        Tip na sezónu
+                    </a>
+                    {% endif %}
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('main.races') }}" class="navbar-item">
+                        Seznam závodů
+                    </a>
+                    {% endif %}
+                    {% if not current_user.is_authenticated %}
+                    <a href="{{ url_for('auth.login') }}" class="navbar-item">
+                        Přihlásit
+                    </a>
+                    <a href="{{ url_for('auth.signup') }}" class="navbar-item">
+                        Registrovat
+                    </a>
+                    {% endif %}
 
-                            {% if current_user.is_authenticated %}
-                            <a href="{{ url_for('main.guess_overview') }}" class="navbar-item">
-                                Přehled tipů
+                    {% if current_user.is_authenticated %}
+                    <div class="navbar-item has-dropdown is-hoverable">
+                        <a class="navbar-link">
+                            Přehled tipů
+                        </a>
+                        <div class="navbar-dropdown">
+                            <a  href="{{ url_for('main.guess_overview_race') }}" class="navbar-item">
+                            Závody
                             </a>
-                            {% endif %}
-                            {% if current_user.is_authenticated %}
-                            <a href="{{ url_for('auth.logout') }}" class="navbar-item">
-                                Odhlásit
+                            <a href="{{ url_for('main.guess_overview_season') }}" class="navbar-item">
+                            Sezóna
                             </a>
-                            {% endif %}
+
                         </div>
                     </div>
+                    {% endif %}
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('auth.logout') }}" class="navbar-item">
+                        Odhlásit
+                    </a>
+                    {% endif %}
                 </div>
-            </nav>
+            </div>
         </div>
+    </nav>
+    <section class="hero is-large is-info">
+
+       
+           
 
         <div class="hero-body">
             <div class="container">
