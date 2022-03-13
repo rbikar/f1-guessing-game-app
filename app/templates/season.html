@@ -20,7 +20,8 @@
 <form method="POST" id="season"  onsubmit='return validateForm();' action="/season">
   <fieldset style="margin: 15px; border: none; "  {%if  lock %} disabled {% endif %} >
     <div class="columns">
-      <div class="column">
+      <div class="column is-4">
+        <div class="box">
         <div id="label" style="font-size: xx-large;">
           Jezdci
         </div>
@@ -28,7 +29,9 @@
         {{ build_driver_select(item.label, item.attr, drivers, guess[item.attr]) }}
         {% endfor %}
       </div>
-      <div class="column">
+      </div>
+      <div class="column  is-4">
+        <div class="box">
         <div id="label" style="font-size: xx-large;">
           Konstruktéři
         </div>
@@ -37,12 +40,14 @@
         {{ build_driver_select(item.label, item.attr, constructors, guess[item.attr]) }}
         {% endfor %}
       </div>
-
+    </div>
   </fieldset>
+  <div class="box">
   <fieldset style="margin: 15px; border: none; "  {%if  lock %} disabled {% endif %} >
     {{ build_submit("Uložit") }}
     {{ build_cancel("Storno") }}
   </fieldset>
+</div>
   </div>
 
   </div>
