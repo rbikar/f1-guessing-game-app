@@ -1,3 +1,5 @@
+import os
+
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_required, login_user, logout_user
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -37,11 +39,15 @@ def login_post():
 
 @auth.route("/signup")
 def signup():
-    return render_template("signup.html")
+    locked = False
+    if os.getenv("REG_LOCK", ""):
+        locked = True
+    return render_template("signup.html", reg_lock=locked)
 
 
 @auth.route("/signup", methods=["POST"])
 def signup_post():
+    # if lock - raise error
     # code to validate and add user to database goes here
     username = request.form.get("username")
     password = request.form.get("password")

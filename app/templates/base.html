@@ -46,11 +46,13 @@
                             <a href="{{ url_for('auth.login') }}" class="navbar-item">
                                 Přihlásit
                             </a>
+                            {% if not reg_lock %}
                             <a href="{{ url_for('auth.signup') }}" class="navbar-item">
                                 Registrovat
                             </a>
                             {% endif %}
-
+                            {% endif %}
+                                    
                             {% if current_user.is_authenticated %}
                             <a href="{{ url_for('main.guess_overview') }}" class="navbar-item">
                                 Přehled tipů
