@@ -42,11 +42,10 @@
 {{ form_item_start(label, false) }}
 <div class="select">
     <select id="safety_car" name="safety_car">
-        
+        <option value selected disabled hidden>---</option>
         {% for value in range(0, limit) %}
         <option value={{value}} 
         {% if value == guess %} selected {% endif %}>{{value}}</option>
-        <option value="" {% if value is none %} selected {% endif %} disabled hidden>---</option>
         {% endfor %}
     </select>
 
