@@ -4,7 +4,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app import db
-from app.models import Constructor, Driver, Race, RaceGuess, User
+from app.models import BonusGuess, Constructor, Driver, Race, RaceGuess, User
 
 from .utils import (
     date_or_none,
@@ -103,6 +103,7 @@ def race_post(short_name):
         .first()
     )
 
+    bonus = db.session.query(BonusGuess).filter(BonusGuess.race_id == race.id).first()
     if guess:
         ### update
         for attr, value in form_data.items():
@@ -136,6 +137,7 @@ def race_post(short_name):
         locks=locks,
         race=race,
         race_type=race.type,
+        bonus=bonus,
     )
 
 
@@ -144,7 +146,7 @@ def race_post(short_name):
 def races():
     def get_row(race):
         return {
-            "name": race.name,
+            "name": race.name.replace("Grand Prix", "GP"),
             "q": date_or_none(race.quali_start),
             "s": date_or_none(race.sprint_start) if race.type == "SPRINT" else "-----",
             "r": date_or_none(race.race_start),
@@ -180,16 +182,25 @@ def races():
 @main.route("/season")
 @login_required
 def season():
+    lock = False
+    if os.getenv("SEASON_LOCK", ""):
+        lock = True
     data = {}
     drivers = [driver.code for driver in db.session.query(Driver).all()]
     constructors = [constr.code for constr in db.session.query(Constructor).all()]
 
-    return render_template("season.html", data=data, guess=data, drivers=drivers)
+    return render_template(
+        "season.html", data=data, guess=data, drivers=drivers, lock=lock
+    )
 
 
 @main.route("/season/", methods=["POST"])
 @login_required
 def season_post():
+    lock = False
+    if os.getenv("SEASON_LOCK", ""):
+        lock = True
+
     data = {}
     if validate_season(request.form):
         ### ulozit do db
@@ -200,7 +211,9 @@ def season_post():
     drivers = [driver.code for driver in db.session.query(Driver).all()]
     constructors = [constr.code for constr in db.session.query(Constructor).all()]
 
-    return render_template("season.html", data=data, guess=data, drivers=drivers)
+    return render_template(
+        "season.html", data=data, guess=data, drivers=drivers, lock=lock
+    )
 
 
 @main.route("/guess_overview")

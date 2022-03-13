@@ -10,22 +10,17 @@ import app.models
 from app import db
 
 
-def create_app():
+def create_app(db_uri=None):
     flask_app = Flask(__name__)
 
-    flask_app.config["SECRET_KEY"] = os.getenv("DB_KEY", "!!!SET-THIS!!!") 
+    flask_app.config["SECRET_KEY"] = os.getenv("DB_KEY", "!!!SET-THIS!!!")
     test = os.getenv("F1TEST", "")
     if not test:
-        flask_app.config["SQLALCHEMY_DATABASE_URI"] = get_db_url()
+        flask_app.config["SQLALCHEMY_DATABASE_URI"] = db_uri or get_db_url()
     else:
-        flask_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///students.sqlite3"
+        flask_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///test.sqlite3"
 
     db.init_app(flask_app)
-    with flask_app.app_context():
-        db.create_all()
-        load_races()
-        load_drivers_to_db()
-        load_constructors_to_db()
 
     login_manager = LoginManager()
     login_manager.login_view = "auth.login"
@@ -113,7 +108,7 @@ def load_races():
                     race_start=None
                     if "TBC" == race["race_start"]
                     else datetime.fromisoformat(race["race_start"]),
-                    name=race["round"],
+                    name=race["name"],
                 )
 
                 db.session.add(new_race)
