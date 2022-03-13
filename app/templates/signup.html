@@ -1,6 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+    <div  class="notification is-danger">
+         {{ messages[0] }}
+    </div>
+{% endif %}
+{% endwith %}
 <div class="column is-4 is-offset-4">
     <h3 class="title">Registrace</h3>
     <div class="box">
