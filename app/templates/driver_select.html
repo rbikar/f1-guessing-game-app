@@ -55,7 +55,11 @@
 
 
 {% macro build_bonus(label, guess) %}
+{% if label %}
 {{ form_item_start(label, false) }}
+{% else %}
+{{ form_item_start("Bonus není zadán!", false) }}
+{% endif %} 
 <input class="input" type="text" placeholder="BONUSOVKA" id="bonus" name="bonus"
  value="{% if guess %}{{guess}}{% endif %}">
 </input>
@@ -65,7 +69,7 @@
 
 {% macro build_submit(label) %}
 {{ form_item_start("", true) }}
-<input class="button is-danger is-large is-fullwidth" type="submit" value={{label}}>
+<input class="button is-danger is-large is-fullwidth" id="submit_guess" type="submit" value={{label}}>
 {{ form_item_end() }}
 {% endmacro %}
 

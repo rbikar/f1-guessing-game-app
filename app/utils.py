@@ -1,10 +1,16 @@
+from copyreg import constructor
 from datetime import datetime, timedelta
 
 import pytz
 
 
-def validate_season(from_data):
-    pass
+def validate_season(form_data):
+    # validate drivers:
+    for item, value in form_data.items():
+        import pdb
+
+        pdb.set_trace()
+        pass
 
 
 def get_current_race(races):
@@ -60,3 +66,19 @@ def is_attr_locked(locks, attr):
     for lock, locked in locks.items():
         if attr in lock_attr_map[lock] and locked:
             return True
+
+
+def get_label_attr_season():
+    drivers = []
+    for num in range(1, 21):
+        label = f"{num}."
+        attr = f"_{num}d"
+        drivers.append({"label": label, "attr": attr})
+
+    constructors = []
+    for num in range(1, 11):
+        label = f"{num}."
+        attr = f"_{num}c"
+        constructors.append({"label": label, "attr": attr})
+
+    return drivers, constructors

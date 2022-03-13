@@ -59,7 +59,7 @@ def get_db_url():
     return f"postgresql+psycopg2://{ PGUSER }:{ PGPASSWORD }@{ PGHOST }:{ PGPORT }/{ PGDATABASE }"
 
 
-def load_races():
+def load_races_to_db():
     with open("app/data/races.json", "r") as f:
         races = json.load(f)
         for race in races:
@@ -161,3 +161,14 @@ def load_constructors_to_db():
                     new_constr = app.models.Constructor(code=line)
                     db.session.add(new_constr)
                     db.session.commit()
+
+
+def load_empty_bonus_guesses_to_db():
+    for race in db.session.query(app.models.Race).all():
+        bonus = app.models.BonusGuess(
+            race_id=race.id,
+            text="",
+            type=None,
+        )
+        db.session.add(bonus)
+        db.session.commit()

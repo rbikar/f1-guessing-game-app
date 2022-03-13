@@ -5,7 +5,8 @@ from app.factory import (
     create_app,
     load_constructors_to_db,
     load_drivers_to_db,
-    load_races,
+    load_races_to_db,
+    load_empty_bonus_guesses_to_db,
 )
 
 db_uri = None
@@ -17,4 +18,5 @@ with app.app_context():
     db.create_all()
     load_constructors_to_db()
     load_drivers_to_db()
-    load_races()
+    load_races_to_db()
+    load_empty_bonus_guesses_to_db()
