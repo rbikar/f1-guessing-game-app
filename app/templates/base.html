@@ -16,15 +16,17 @@
         <div class="hero-head">
             <nav class="navbar">
                 <div class="container">
+                    <div class="navbar-brand">
+                        <a class="navbar-item" href="{{ url_for('main.index') }}">
+                            Ultimátní tipovačka F1 2022
+                        </a>
+                    </div>
                     <a role="button" class="navbar-burger" id="burger"  aria-label="menu" aria-expanded="false" data-target="navbarMenuHeroA">
                         <span aria-hidden="true"></span>
                         <span aria-hidden="true"></span>
                         <span aria-hidden="true"></span>
 
                     </a>
-
-
-
                     <div id="navbarMenuHeroA" class="navbar-menu">
                         <div class="navbar-end">
                             {% if current_user.is_authenticated %}
