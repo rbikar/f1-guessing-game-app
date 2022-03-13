@@ -1,16 +1,6 @@
-from copyreg import constructor
 from datetime import datetime, timedelta
 
 import pytz
-
-
-def validate_season(form_data):
-    # validate drivers:
-    for item, value in form_data.items():
-        import pdb
-
-        pdb.set_trace()
-        pass
 
 
 def get_current_race(races):

@@ -1,5 +1,4 @@
 import os
-from telnetlib import SE
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
@@ -21,7 +20,6 @@ from .utils import (
     get_label_attr_season,
     get_locks_race,
     is_attr_locked,
-    validate_season,
 )
 
 main = Blueprint("main", __name__)
