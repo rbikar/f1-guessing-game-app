@@ -39,39 +39,38 @@ def login_post():
 
 @auth.route("/signup")
 def signup():
-    locked = False
-    if os.getenv("REG_LOCK", ""):
-        locked = True
-    return render_template("signup.html", reg_lock=locked)
+    return render_template("signup.html")
 
 
 @auth.route("/signup", methods=["POST"])
 def signup_post():
-    # if lock - raise error
-    # code to validate and add user to database goes here
-    username = request.form.get("username")
-    password = request.form.get("password")
+    if os.getenv("REG_LOCKED", ""):
+        flash("Registrace uzavřeny")
+    else:
+        # code to validate and add user to database goes here
+        username = request.form.get("username")
+        password = request.form.get("password")
 
-    user = User.query.filter_by(
-        username=username
-    ).first()  # if this returns a user, then the username already exists in database
+        user = User.query.filter_by(
+            username=username
+        ).first()  # if this returns a user, then the username already exists in database
 
-    if (
-        user
-    ):  # if a user is found, we want to redirect back to signup page so user can try again
-        flash("Uživatelské jméno již existuje")
+        if (
+            user
+        ):  # if a user is found, we want to redirect back to signup page so user can try again
+            flash("Uživatelské jméno již existuje")
 
-        return redirect(url_for("auth.signup"))
+            return redirect(url_for("auth.signup"))
 
-    # create a new user with the form data. Hash the password so the plaintext version isn't saved.
-    new_user = User(
-        username=username,
-        password=generate_password_hash(password, method="sha256"),
-    )
+        # create a new user with the form data. Hash the password so the plaintext version isn't saved.
+        new_user = User(
+            username=username,
+            password=generate_password_hash(password, method="sha256"),     
+        )
 
-    # add the new user to the database
-    db.session.add(new_user)
-    db.session.commit()
+        # add the new user to the database
+        db.session.add(new_user)
+        db.session.commit()
 
     return redirect(url_for("auth.login"))
 

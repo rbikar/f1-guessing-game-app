@@ -188,7 +188,9 @@ def season():
     data = {}
     drivers = [driver.code for driver in db.session.query(Driver).all()]
     constructors = [constr.code for constr in db.session.query(Constructor).all()]
-
+    lock = False
+    if os.getenv("WIP", ""):
+        return render_template("wip.html")
     return render_template(
         "season.html", data=data, guess=data, drivers=drivers, lock=lock
     )
@@ -219,6 +221,8 @@ def season_post():
 @main.route("/guess_overview")
 @login_required
 def guess_overview():
+    if os.getenv("WIP", ""):
+        return render_template("wip.html")
     data = {}
     users = db.session.query(User).all()
     all_races = db.session.query(Race).all()

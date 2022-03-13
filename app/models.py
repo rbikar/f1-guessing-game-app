@@ -102,6 +102,6 @@ class BonusGuess(db.Model):
         db.Integer, primary_key=True
     )  # primary keys are required by SQLAlchemy
 
-    text = constructorId = db.Column(db.String(500))
+    text = db.Column(db.String(500))
     type = db.Column(db.String(100))
     race_id = db.Column(db.Integer, db.ForeignKey("race.id"))
