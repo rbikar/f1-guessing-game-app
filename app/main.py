@@ -24,8 +24,6 @@ def health():
 
 @main.route("/")
 def index():
-
-    test = os.getenv("PGDATABASE")
     return render_template("index.html")
 
 
@@ -155,7 +153,7 @@ def races():
 
     races = db.session.query(Race).all()
     currrent_race = get_current_race(races)
-    table_head = ["F1 2022", "KVALIFIKACE", "SPRINT", "ZÁVOD"]
+    table_head = ["F1 2022", "Q", "SPRINT", "ZÁVOD"]
     finished = []
     current = []
     upcoming = []
