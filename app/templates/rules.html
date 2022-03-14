@@ -1,0 +1,100 @@
+{% extends "base.html" %} {% block content %} {% from "driver_select.html" import build_row %} <div class="box">
+    <h1 class="title"> Bodování a pravidla </h1>
+</div>
+<div class="box">
+    <table class="table is-bordered">
+        <tbody>
+            <tr>
+                <th colspan="2" style="text-align:center"> Jednotlivé závody </th>
+            </tr>
+            <tr>
+                <td> Správně tipnutý jezdec na bedně </td>
+                <td> Zisk 0,5 bodu </td>
+            </tr>
+            <tr>
+                <td> Přesný tip umístění na bedně </td>
+                <td> Plus 0,5 bodu (celkem 1 bod) </td>
+            </tr>
+            <tr>
+                <td> Správně tipnutý vítěz </td>
+                <td> Zisk 1 bodu Plus 1 bod (celkem 2 body) </td>
+            </tr>
+            <tr>
+                <td> Ostatní tipované položky víkendu </td>
+                <td> Zisk 1 bodu </td>
+            </tr>
+            <tr>
+                <th colspan="2" style="text-align:center"> Sezóna </th>
+            </tr>
+            <tr>
+                <td> Správně tipnutá položka </td>
+                <td> Zisk 2 bodů </td>
+            </tr>
+            <tr>
+                <td> Správně tipnutý mistr - jezdci </td>
+                <td> Plus 10 bodů (celkem 12 bodů) </td>
+            </tr>
+            <tr>
+                <td> Správně tipnutý mistr - konstruktéři </td>
+                <td> Plus 5 bodů (celkem 7 bodů) </td>
+            </tr>
+            <tr>
+                <td> Správně tipnutý vzájemný souboj </td>
+                <td> Zisk 1 bodu </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+<div class="box">
+    <table class="table is-bordered">
+        <thead>
+            <th> Deadline pro zadání tipu </th>
+            <th> Čas </th>
+        </thead>
+        <tbody>
+            <tr>
+                <th colspan="2" style="text-align:center"> Jednotlivé závody </th>
+            </tr>
+            <tr>
+                <td> Kvalifikace </td>
+                <td> Plánovaný čas začátku Q1 </td>
+            </tr>
+            <tr>
+                <td> Sprint </td>
+                <td> Plánovaný čas začátku sprintu </td>
+            </tr>
+            <tr>
+                <td> Závod </td>
+                <td> Plánovaný čas začátku závodu </td>
+            </tr>
+            <tr>
+                <th colspan="2" style="text-align:center"> Sezóna </th>
+            </tr>
+            <tr>
+                <td> Všechny tipy </td>
+                <td> Pátek před druhým závodem do 23:59 </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+<div class="box content">
+    <h2 class="title">Vysvětlivky:</h2>
+    <ul>
+        <li>Body za položku a za vítěze se sčítají. Příklad: tip na bednu je HAM-BOT-VER. Skutečné pořadí je
+            HAM-SAI-VER. Bodové skóre jsou 3 body = 1 bod za HAM + 1 bod za VER + 1 bod za HAM jako vítěze. </li>
+        <li>Stejně to platí i u celkového pořadí jezdců a týmů. Tip na mistra je HAM a MERCEDES. Skutečně to tak bude -
+            tipér dostane 19 bodů = 2 + 2 body za položky + 10 bodů za mistra + 5 bodů za konstruktéra. </li>
+        <li> Za správně tipnutý vzájemný týmový souboj v konečném pořadí sezóny získá tipér 1 bod. Příklad: Tipuju LEC
+            na 5. místě a SAI na 7. místě. Konečné pořadí je LEC 4. a SAI 7. Dostanu celkem 3 body: 2 body za správné
+            umístění SAI a 1 bod za správný tip, že LEC skončí v bodování před SAI. </li>
+        <li> Bonusový tip - je stanoven na další závodní víkend vždy nejdříve po skončení aktuálního závodu. První
+            otázku stanovuje Štěpi, každou další vždy nejlepší tipér předchozího závodního víkendu. Při shodě bodů z
+            předchozího víkendu ji stanovuje tipér, který aktuálně vede celkové pořadí. Pokud ma více tipérů stejně bodů
+            v celkové tabulce, otázku zadává tipér s nejvyšším počtem účastí na Hungaroringu. Při shodě se tipéři
+            gentlemansky dohodnou. Ideální je zadání otázky začátkem závodního víkendu. </li>
+        <li> Výjezd safety car - kolikrát za závod vyjede SC? Počítá se pouze skutečný SC. Nepočítá se VSC, žluté vlajky
+            a další drobná přerušení. </li>
+        <li> Jakékoliv neplánované změny v průběhu sezóny - záskoky, výměny jezdců, sprintové závody, změny v závodech,
+            atd. - zasedne Jury! </li>
+    </ul>
+</div> {% endblock %}

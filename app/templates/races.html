@@ -4,25 +4,25 @@
 {% from "driver_select.html" import build_row %}
 <div class="box">
 
-<table class="table"  style="text-align:center">
-    <thead>
-        <tr>
-            {% for cell in table_head %}
-            <th> {{cell}} </th>
+    <table class="table" style="text-align:center">
+        <thead>
+            <tr>
+                {% for cell in table_head %}
+                <th> {{cell}} </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows.finished %}
+            {{ build_row(row, false) }}
             {% endfor %}
-        </tr>
-    </thead>
-    <tbody>
-        {% for row in rows.finished %}
-        {{ build_row(row, false) }}
-        {% endfor %}
-        {% for row in rows.current %}
-        {{  build_row(row, true) }}
-        {% endfor %}
-        {% for row in rows.upcoming %}
-        {{  build_row(row, false) }}
-        {% endfor %}
-    </tbody>
-</table>
+            {% for row in rows.current %}
+            {{  build_row(row, true) }}
+            {% endfor %}
+            {% for row in rows.upcoming %}
+            {{  build_row(row, false) }}
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}

@@ -6,7 +6,7 @@ import pytz
 def get_current_race(races):
     now = datetime.utcnow()
     utc = now.replace(tzinfo=pytz.utc)
-    # now = datetime(2022, 3, 23, 15, 00)
+    #  now = datetime(2022, 3, 23, 15, 00)
     time = utc - timedelta(hours=6)
     candidates = []
     last = []
@@ -32,7 +32,7 @@ def date_or_none(date):
 def get_locks_race(race):
     locks = {}
     now = datetime.utcnow()
-    # now = datetime(2022, 3, 23, 15, 00)
+    # now = datetime(2022, 3, 19, 15, 0)
     utc_now = now.replace(tzinfo=pytz.utc)
 
     for attr in ["quali_start", "sprint_start", "race_start"]:
@@ -72,3 +72,13 @@ def get_label_attr_season():
         constructors.append({"label": label, "attr": attr})
 
     return drivers, constructors
+
+
+def can_see_guess(lock, user, current_user, admin):
+    if admin:
+        return True
+
+    if current_user.id == user.id:
+        return True
+
+    return lock

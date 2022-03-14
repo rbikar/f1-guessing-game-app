@@ -17,37 +17,37 @@
 
 {% from "driver_select.html" import build_driver_select, build_submit, build_cancel %}
 
-<form method="POST" id="season"  onsubmit='return validateForm();' action="/season">
-  <fieldset style="margin: 15px; border: none; "  {%if  lock %} disabled {% endif %} >
+<form method="POST" id="season" onsubmit='return validateForm();' action="/season">
+  <fieldset style="margin: 15px; border: none; " {%if  lock %} disabled {% endif %}>
     <div class="columns">
       <div class="column is-4">
         <div class="box">
-        <div id="label" style="font-size: xx-large;">
-          Jezdci
+          <div id="label" style="font-size: xx-large;">
+            Jezdci
+          </div>
+          {% for item in data.drivers %}
+          {{ build_driver_select(item.label, item.attr, drivers, guess[item.attr]) }}
+          {% endfor %}
         </div>
-        {% for item in data.drivers %}
-        {{ build_driver_select(item.label, item.attr, drivers, guess[item.attr]) }}
-        {% endfor %}
-      </div>
       </div>
       <div class="column  is-4">
         <div class="box">
-        <div id="label" style="font-size: xx-large;">
-          Konstruktéři
-        </div>
+          <div id="label" style="font-size: xx-large;">
+            Konstruktéři
+          </div>
 
-        {% for item in data.constructors %}
-        {{ build_driver_select(item.label, item.attr, constructors, guess[item.attr]) }}
-        {% endfor %}
+          {% for item in data.constructors %}
+          {{ build_driver_select(item.label, item.attr, constructors, guess[item.attr]) }}
+          {% endfor %}
+        </div>
       </div>
-    </div>
   </fieldset>
   <div class="box">
-  <fieldset style="margin: 15px; border: none; "  {%if  lock %} disabled {% endif %} >
-    {{ build_submit("Uložit") }}
-    {{ build_cancel("Storno") }}
-  </fieldset>
-</div>
+    <fieldset style="margin: 15px; border: none; " {%if  lock %} disabled {% endif %}>
+      {{ build_submit("Uložit") }}
+      {{ build_cancel("Storno") }}
+    </fieldset>
+  </div>
   </div>
 
   </div>

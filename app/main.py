@@ -20,6 +20,7 @@ from .utils import (
     get_label_attr_season,
     get_locks_race,
     is_attr_locked,
+    can_see_guess,
 )
 
 main = Blueprint("main", __name__)
@@ -267,6 +268,8 @@ def season_post():
             db.session.commit()
             season_guess = new_season_guess
 
+        flash("Tip v pořádku uložen")
+
     return render_template(
         "season.html",
         data=data,
@@ -311,9 +314,127 @@ def guess_overview():
 @login_required
 def guess_overview_race():
     return render_template("wip.html")
+    result = "X"
+    result_sum = "0"
+    admin = True if current_user.role == "ADMIN" else False
+
+    races = db.session.query(Race).all()
+    users = db.session.query(User).all()
+
+    thead = [
+        "Tip",
+        "Výsledek",
+    ]
+    quali_row = ["Vítěz kvalifikace", result]
+    sprint_row = ["Vítěz sprintu", result]
+    _1_row = ["Vítěz závodu", result]
+    _2_row = ["Druhé místo", result]
+    _3_row = ["Třetí místo", result]
+
+    fastest_lap_row = ["Nejrychlejší kolo", result]
+    safety_car_row = ["Výjezd safety car", result]
+    bonus_row = ["Bonusový tip", result]
+
+    keys = [
+        "quali",
+        "sprint",
+        "first",
+        "second",
+        "third",
+        "safety_car",
+        "fastest_lap",
+        "bonus",
+    ]
+
+    for race in races:
+        race_id = race.id
+        thead[0] = race.name
+        for user in sorted(users, key=lambda x: x.username):
+            guess = (
+                db.session.query(RaceGuess)
+                .filter(RaceGuess.user_id == user.id)
+                .filter(RaceGuess.race_id == race_id)
+                .first()
+            )
+            if guess is None:
+                # vsede vykricnik
+                pass
+
+            locks = get_locks_race(race)
+            # import pdb;pdb.set_trace()
+
+            thead.extend([user.username, result_sum])
+
+            value = (
+                guess.quali
+                if can_see_guess(locks["quali_start"], user, current_user, admin)
+                else "LOCK"
+            )
+            can_see = can_see_guess(locks["quali_start"], user, current_user, admin)
+            if guess.quali:
+                if can_see:
+                    value = guess.quali
+                else:
+                    value = "LK"
+            else:
+                value = "NT"
+
+            quali_row.extend([value, result_sum])
+
+            value = (
+                guess.sprint
+                if can_see_guess(locks["sprint_start"], user, current_user, admin)
+                else "LOCK"
+            )
+            # if race.type == "SPRINT":
+            sprint_row.extend([guess.sprint, result_sum])
+            race_can_see = can_see_guess(locks["race_start"], user, current_user, admin)
+
+            value = guess.first if race_can_see else "LOCK"
+            _1_row.extend([value, result_sum])
+            value = guess.second if race_can_see else "LOCK"
+            _2_row.extend([value, result_sum])
+            value = guess.third if race_can_see else "LOCK"
+            _3_row.extend([value, result_sum])
+
+            value = guess.fastest_lap if race_can_see else "LOCK"
+            fastest_lap_row.extend([value, result_sum])
+
+            value = guess.third if race_can_see else "LOCK"
+            safety_car_row.extend([value, result_sum])
+
+            value = guess.bonus if race_can_see else "LOCK"
+            bonus_row.extend([value, result_sum])
+
+        break  #### zatim na test
+
+    data = [
+        quali_row,
+        sprint_row,
+        _1_row,
+        _2_row,
+        _3_row,
+        fastest_lap_row,
+        safety_car_row,
+        bonus_row,
+    ]
+
+    return render_template("guess_overivew_race.html", thead=thead, data=data)
+
+
+def lock_or_no_guess(guess, lock):
+    if guess:
+        return "ZAMEK"
+    return "CHYBI TIP!"
 
 
 @main.route("/guess_overview/season")
 @login_required
 def guess_overview_season():
     return render_template("wip.html")
+
+
+@main.route("/rules")
+@login_required
+def rules():
+    return render_template("rules.html")

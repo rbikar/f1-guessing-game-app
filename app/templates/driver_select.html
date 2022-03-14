@@ -1,17 +1,13 @@
-
-
-
 {% macro build_driver_select(label, id, drivers, guess) %}
 {{ form_item_start(label, false) }}
-                <div class="select" default="">
-                    <select id={{ id }} name={{ id}}>
-                        <option value="" selected disabled hidden>---</option>
-                        {% for driver in drivers %}
-                        <option value={{driver}} 
-                        {% if driver == guess %} selected {% endif %}>{{driver}}</option>
-                        {% endfor %}
-                    </select>
-                </div>        
+<div class="select" default="">
+    <select id={{ id }} name={{ id}}>
+        <option value="" selected disabled hidden>---</option>
+        {% for driver in drivers %}
+        <option value={{driver}} {% if driver == guess %} selected {% endif %}>{{driver}}</option>
+        {% endfor %}
+    </select>
+</div>
 {{ form_item_end() }}
 {% endmacro %}
 
@@ -21,19 +17,19 @@
     <div class="field-label is-normal">
         <label class="label">{{ label }}</label>
     </div>
-    
+
     <div class="field-body">
         <div class="field">
             <p class="control">
 
 
-{% endmacro %}
+                {% endmacro %}
 
 
-{% macro form_item_end() %}
-</p>
-</div>
-</div>
+                {% macro form_item_end() %}
+            </p>
+        </div>
+    </div>
 </div>
 {% endmacro %}
 
@@ -44,8 +40,7 @@
     <select id="safety_car" name="safety_car">
         <option value selected disabled hidden>---</option>
         {% for value in range(0, limit) %}
-        <option value={{value}} 
-        {% if value == guess %} selected {% endif %}>{{value}}</option>
+        <option value={{value}} {% if value == guess %} selected {% endif %}>{{value}}</option>
         {% endfor %}
     </select>
 
@@ -59,9 +54,9 @@
 {{ form_item_start(label, false) }}
 {% else %}
 {{ form_item_start("Bonus není zadán!", false) }}
-{% endif %} 
+{% endif %}
 <input class="input" type="text" placeholder="BONUSOVKA" id="bonus" name="bonus"
- value="{% if guess %}{{guess}}{% endif %}">
+    value="{% if guess %}{{guess}}{% endif %}">
 </input>
 {{ form_item_end() }}
 {% endmacro %}
@@ -89,11 +84,32 @@
     <td> {{race.q}} </td>
     <td> {{race.s}} </td>
     <td> {{race.r}} </td>
-    
+
 </tr>
 
 {% endmacro %}
 
 
+{% macro build_lock(label, time, locked) %}
+<table class="table is-bordered" style="table-layout: fixed; width: 100%;">
+    <tbody>
+        <th>
+            {{ label }}
+        </th>
+        <td>{{ time }}
+        </td>
+        <td>
+            {% if  locked %}
+            <ion-icon name="lock-closed" style="color: red;"></ion-icon>
+            Tipování zamčeno!
+            <ion-icon name="lock-closed" style="color: red;"></ion-icon>
 
-
+            {% else %}
+            <ion-icon name="lock-open" style="color: green;"></ion-icon>
+            Tipování odemčeno!
+            <ion-icon name="lock-open" style="color: green;"></ion-icon>
+        </td>
+        {% endif %}
+    </tbody>
+</table>
+{% endmacro %}

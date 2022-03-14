@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="box content is-medium">
+    <h2>Vysvětlivky: </h2>
+    <ul>
+        <li>
+            <ion-icon name="lock-closed" style="color: green;"></ion-icon> Tip je zadán, ale je momentálně uzamčen pro
+            ostatní uživatele. Tipy ostatních je možné vidět až po začítku akce.
+        </li>
+        <li>
+            <ion-icon name="alert-circle" style="color: red;"></ion-icon> Tip není zadán, je třeba zadat před začátkem
+            akce. Zadávání tipů se automicky uzamče po oficiálním začátku akce.
+        </li>
+    </ul>
+
+</div>
+<div class="box">
+    <table class="table">
+        <thead>
+            <tr>
+                {% for cell in thead %}
+                <th> {{cell}} </th>
+
+                {% endfor %}
+
+            </tr>
+        </thead>
+
+
+
+        <tbody>
+            {% for row in data %}
+            <tr>
+                {% for cell in row %}
+
+                <td> {% if cell == "LK" %}
+                    <ion-icon name="lock-closed" style="color: green;"></ion-icon>
+                    {% elif cell == "NT" %}
+                    <ion-icon name="alert-circle" style="color: red;"></ion-icon>
+                    {% else %}
+                    {{cell}}
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
