@@ -2,47 +2,59 @@
 
 {% block content %}
 <h1 class="title">
-Tip na sezonu
+  Tip na sezonu
 
 </h1>
 
 
 {% with messages = get_flashed_messages() %}
 {% if messages %}
-    <div  class="notification is-success">
-         {{ messages[0] }}
-    </div>
+<div class="notification is-success">
+  {{ messages[0] }}
+</div>
 {% endif %}
 {% endwith %}
 
-{% from "driver_select.html" import build_driver_select, build_safety_car, build_bonus, build_submit, build_cancel %}
+{% from "driver_select.html" import build_driver_select, build_submit, build_cancel %}
 
-<form  method="POST" action="/race/{{season}}">
-    <fieldset style="margin: 15px; border: none; ">
+<form method="POST" id="season" onsubmit='return validateForm();' action="/season">
+  <fieldset style="margin: 15px; border: none; " {%if  lock %} disabled {% endif %}>
     <div class="columns">
-        <div class="column">
-            <div id="label" style="font-size: xx-large;">
+      <div class="column is-4">
+        <div class="box">
+          <div id="label" style="font-size: xx-large;">
             Jezdci
-            </div>
-
-          {{ build_driver_select("Mistr", "first", drivers, guess.first) }}
-          {{ build_driver_select("2.", "first", drivers, guess.first) }}
-          {{ build_driver_select("3.", "first", drivers, guess.first) }}
-          {{ build_driver_select("4.", "first", drivers, guess.first) }}
-        </div>
-        <div class="column">
-         druhy kloum
-        </div>
-        <div class="column">
-          Third column
-        </div>
-        <div class="column">
-          Fourth column
+          </div>
+          {% for item in data.drivers %}
+          {{ build_driver_select(item.label, item.attr, drivers, guess[item.attr]) }}
+          {% endfor %}
         </div>
       </div>
-    </fieldset>  
+      <div class="column  is-4">
+        <div class="box">
+          <div id="label" style="font-size: xx-large;">
+            Konstruktéři
+          </div>
+
+          {% for item in data.constructors %}
+          {{ build_driver_select(item.label, item.attr, constructors, guess[item.attr]) }}
+          {% endfor %}
+        </div>
+      </div>
+  </fieldset>
+  <div class="box">
+    <fieldset style="margin: 15px; border: none; " {%if  lock %} disabled {% endif %}>
+      {{ build_submit("Uložit") }}
+      {{ build_cancel("Storno") }}
+    </fieldset>
+  </div>
+  </div>
+
+  </div>
+
+
 
 </form>
-</div>
-</div>
+<script src="{{url_for('static', filename='validate_season.js')}}"></script>
+
 {% endblock %}

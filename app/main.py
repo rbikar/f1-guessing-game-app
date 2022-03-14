@@ -4,14 +4,23 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app import db
-from app.models import BonusGuess, Constructor, Driver, Race, RaceGuess, User
+from app.models import (
+    BonusGuess,
+    Constructor,
+    Driver,
+    Race,
+    RaceGuess,
+    SeasonGuess,
+    User,
+)
 
 from .utils import (
     date_or_none,
     get_current_race,
+    get_label_attr_season,
     get_locks_race,
     is_attr_locked,
-    validate_season,
+    can_see_guess,
 )
 
 main = Blueprint("main", __name__)
@@ -53,9 +62,13 @@ def race(short_name):
         .filter(RaceGuess.user_id == current_user.id)
         .first()
     )
-
+    bonus = db.session.query(BonusGuess).filter(BonusGuess.race_id == race.id).first()
     locks = get_locks_race(race)
-
+    start_times = {
+        "q_start": date_or_none(race.quali_start),
+        "s_start": date_or_none(race.sprint_start) if race.type == "SPRINT" else None,
+        "r_start": date_or_none(race.race_start),
+    }
     return render_template(
         "race.html",
         drivers=drivers,
@@ -63,13 +76,14 @@ def race(short_name):
         locks=locks,
         race=race,
         race_type=race.type,
+        start_times=start_times,
+        bonus=bonus,
     )
 
 
 @main.route("/race/<string:short_name>", methods=["POST"])
 @login_required
 def race_post(short_name):
-    ### updae do db
     current_race_short_name = short_name
     drivers = [driver.code for driver in db.session.query(Driver).all()]
 
@@ -128,6 +142,11 @@ def race_post(short_name):
         guess = new_guess
 
     flash("Tip v pořádku uložen")
+    start_times = {
+        "q_start": date_or_none(race.quali_start),
+        "s_start": date_or_none(race.sprint_start) if race.type == "SPRINT" else None,
+        "r_start": date_or_none(race.race_start),
+    }
     return render_template(
         "race.html",
         drivers=drivers,
@@ -136,6 +155,7 @@ def race_post(short_name):
         race=race,
         race_type=race.type,
         bonus=bonus,
+        start_times=start_times,
     )
 
 
@@ -177,24 +197,38 @@ def races():
     return render_template("races.html", table_head=table_head, rows=rows)
 
 
-@main.route("/season")
+@main.route("/season", methods=["GET"])
 @login_required
 def season():
     lock = False
     if os.getenv("SEASON_LOCK", ""):
         lock = True
     data = {}
+
     drivers = [driver.code for driver in db.session.query(Driver).all()]
     constructors = [constr.code for constr in db.session.query(Constructor).all()]
-    lock = False
+    label_attrs_lists = get_label_attr_season()
+    data["drivers"] = label_attrs_lists[0]
+    data["constructors"] = label_attrs_lists[1]
+    season_guess = (
+        db.session.query(SeasonGuess)
+        .filter(SeasonGuess.user_id == current_user.id)
+        .first()
+    )
+
     if os.getenv("WIP", ""):
         return render_template("wip.html")
     return render_template(
-        "season.html", data=data, guess=data, drivers=drivers, lock=lock
+        "season.html",
+        data=data,
+        guess=season_guess,
+        drivers=drivers,
+        constructors=constructors,
+        lock=lock,
     )
 
 
-@main.route("/season/", methods=["POST"])
+@main.route("/season", methods=["POST"])
 @login_required
 def season_post():
     lock = False
@@ -202,17 +236,47 @@ def season_post():
         lock = True
 
     data = {}
-    if validate_season(request.form):
-        ### ulozit do db
-        pass
-    else:
-        flash("TIPY ZADANE ZLE")
-        ### neulozit a vratit do fomru co tam zadal
+
     drivers = [driver.code for driver in db.session.query(Driver).all()]
     constructors = [constr.code for constr in db.session.query(Constructor).all()]
+    label_attrs_lists = get_label_attr_season()
+
+    data["drivers"] = label_attrs_lists[0]
+    data["constructors"] = label_attrs_lists[1]
+
+    season_guess = (
+        db.session.query(SeasonGuess)
+        .filter(SeasonGuess.user_id == current_user.id)
+        .first()
+    )
+    if not lock:
+        if season_guess:
+            # update
+            for item in data["constructors"]:
+                setattr(season_guess, item["attr"], request.form.get(item["attr"]))
+            for item in data["drivers"]:
+                setattr(season_guess, item["attr"], request.form.get(item["attr"]))
+            db.session.commit()
+        else:
+            new_season_guess = SeasonGuess(user_id=current_user.id)
+            for item in data["constructors"]:
+                setattr(new_season_guess, item["attr"], request.form.get(item["attr"]))
+            for item in data["drivers"]:
+                setattr(new_season_guess, item["attr"], request.form.get(item["attr"]))
+
+            db.session.add(new_season_guess)
+            db.session.commit()
+            season_guess = new_season_guess
+
+        flash("Tip v pořádku uložen")
 
     return render_template(
-        "season.html", data=data, guess=data, drivers=drivers, lock=lock
+        "season.html",
+        data=data,
+        guess=season_guess,
+        drivers=drivers,
+        lock=lock,
+        constructors=constructors,
     )
 
 
@@ -244,3 +308,133 @@ def guess_overview():
     return render_template(
         "guess_overview.html", data=data, table_head=table_head, rows=rows
     )
+
+
+@main.route("/guess_overview/race")
+@login_required
+def guess_overview_race():
+    return render_template("wip.html")
+    result = "X"
+    result_sum = "0"
+    admin = True if current_user.role == "ADMIN" else False
+
+    races = db.session.query(Race).all()
+    users = db.session.query(User).all()
+
+    thead = [
+        "Tip",
+        "Výsledek",
+    ]
+    quali_row = ["Vítěz kvalifikace", result]
+    sprint_row = ["Vítěz sprintu", result]
+    _1_row = ["Vítěz závodu", result]
+    _2_row = ["Druhé místo", result]
+    _3_row = ["Třetí místo", result]
+
+    fastest_lap_row = ["Nejrychlejší kolo", result]
+    safety_car_row = ["Výjezd safety car", result]
+    bonus_row = ["Bonusový tip", result]
+
+    keys = [
+        "quali",
+        "sprint",
+        "first",
+        "second",
+        "third",
+        "safety_car",
+        "fastest_lap",
+        "bonus",
+    ]
+
+    for race in races:
+        race_id = race.id
+        thead[0] = race.name
+        for user in sorted(users, key=lambda x: x.username):
+            guess = (
+                db.session.query(RaceGuess)
+                .filter(RaceGuess.user_id == user.id)
+                .filter(RaceGuess.race_id == race_id)
+                .first()
+            )
+            if guess is None:
+                # vsede vykricnik
+                pass
+
+            locks = get_locks_race(race)
+            # import pdb;pdb.set_trace()
+
+            thead.extend([user.username, result_sum])
+
+            value = (
+                guess.quali
+                if can_see_guess(locks["quali_start"], user, current_user, admin)
+                else "LOCK"
+            )
+            can_see = can_see_guess(locks["quali_start"], user, current_user, admin)
+            if guess.quali:
+                if can_see:
+                    value = guess.quali
+                else:
+                    value = "LK"
+            else:
+                value = "NT"
+
+            quali_row.extend([value, result_sum])
+
+            value = (
+                guess.sprint
+                if can_see_guess(locks["sprint_start"], user, current_user, admin)
+                else "LOCK"
+            )
+            # if race.type == "SPRINT":
+            sprint_row.extend([guess.sprint, result_sum])
+            race_can_see = can_see_guess(locks["race_start"], user, current_user, admin)
+
+            value = guess.first if race_can_see else "LOCK"
+            _1_row.extend([value, result_sum])
+            value = guess.second if race_can_see else "LOCK"
+            _2_row.extend([value, result_sum])
+            value = guess.third if race_can_see else "LOCK"
+            _3_row.extend([value, result_sum])
+
+            value = guess.fastest_lap if race_can_see else "LOCK"
+            fastest_lap_row.extend([value, result_sum])
+
+            value = guess.third if race_can_see else "LOCK"
+            safety_car_row.extend([value, result_sum])
+
+            value = guess.bonus if race_can_see else "LOCK"
+            bonus_row.extend([value, result_sum])
+
+        break  #### zatim na test
+
+    data = [
+        quali_row,
+        sprint_row,
+        _1_row,
+        _2_row,
+        _3_row,
+        fastest_lap_row,
+        safety_car_row,
+        bonus_row,
+    ]
+
+    return render_template("guess_overivew_race.html", thead=thead, data=data)
+
+
+def lock_or_no_guess(guess, lock):
+    if guess:
+        return "ZAMEK"
+    return "CHYBI TIP!"
+
+
+@main.route("/guess_overview/season")
+@login_required
+def guess_overview_season():
+    return render_template("wip.html")
+
+
+@main.route("/rules")
+@login_required
+def rules():
+    return render_template("rules.html")

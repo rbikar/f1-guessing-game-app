@@ -1,7 +1,6 @@
 import json
 import os
 from datetime import datetime, timedelta
-from distutils.command.config import config
 
 from flask import Flask, session
 from flask_login import LoginManager
@@ -12,11 +11,11 @@ from app import db
 
 def create_app(db_uri=None):
     flask_app = Flask(__name__)
-
+    config = {}
     flask_app.config["SECRET_KEY"] = os.getenv("DB_KEY", "!!!SET-THIS!!!")
     test = os.getenv("F1TEST", "")
     if not test:
-        flask_app.config["SQLALCHEMY_DATABASE_URI"] = db_uri or get_db_url()
+        flask_app.config["SQLALCHEMY_DATABASE_URI"] = db_uri or get_db_url(config)
     else:
         flask_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///test.sqlite3"
 
@@ -49,7 +48,7 @@ def create_app(db_uri=None):
     return flask_app
 
 
-def get_db_url():
+def get_db_url(config):
     PGHOST = os.getenv("PGHOST") or config.get("PGHOST")
     PGUSER = os.getenv("PGUSER") or config.get("PGUSER")
     PGPASSWORD = os.getenv("PGPASSWORD") or config.get("PGPASSWORD")
@@ -59,7 +58,7 @@ def get_db_url():
     return f"postgresql+psycopg2://{ PGUSER }:{ PGPASSWORD }@{ PGHOST }:{ PGPORT }/{ PGDATABASE }"
 
 
-def load_races():
+def load_races_to_db():
     with open("app/data/races.json", "r") as f:
         races = json.load(f)
         for race in races:
@@ -161,3 +160,14 @@ def load_constructors_to_db():
                     new_constr = app.models.Constructor(code=line)
                     db.session.add(new_constr)
                     db.session.commit()
+
+
+def load_empty_bonus_guesses_to_db():
+    for race in db.session.query(app.models.Race).all():
+        bonus = app.models.BonusGuess(
+            race_id=race.id,
+            text="",
+            type=None,
+        )
+        db.session.add(bonus)
+        db.session.commit()

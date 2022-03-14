@@ -61,14 +61,40 @@ class SeasonGuess(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
 
     ###drivers
-    winner = db.Column(db.String(100))
-    _2 = db.Column(db.String(100))
-    _3 = db.Column(db.String(100))
+    _1d = db.Column(db.String(100))
+    _2d = db.Column(db.String(100))
+    _3d = db.Column(db.String(100))
+    _4d = db.Column(db.String(100))
+    _5d = db.Column(db.String(100))
+    _6d = db.Column(db.String(100))
+    _7d = db.Column(db.String(100))
+    _8d = db.Column(db.String(100))
+    _9d = db.Column(db.String(100))
+    _10d = db.Column(db.String(100))
+    _11d = db.Column(db.String(100))
+    _12d = db.Column(db.String(100))
+    _13d = db.Column(db.String(100))
+    _14d = db.Column(db.String(100))
+    _15d = db.Column(db.String(100))
+    _16d = db.Column(db.String(100))
+    _17d = db.Column(db.String(100))
+    _18d = db.Column(db.String(100))
+    _19d = db.Column(db.String(100))
+    _20d = db.Column(db.String(100))
     ### 20 jezdcu
 
     ###constructors
     #
-    winner_constructor = db.Column(db.String(100))
+    _1c = db.Column(db.String(100))
+    _2c = db.Column(db.String(100))
+    _3c = db.Column(db.String(100))
+    _4c = db.Column(db.String(100))
+    _5c = db.Column(db.String(100))
+    _6c = db.Column(db.String(100))
+    _7c = db.Column(db.String(100))
+    _8c = db.Column(db.String(100))
+    _9c = db.Column(db.String(100))
+    _10c = db.Column(db.String(100))
     ### 10 stsaji
 
 
