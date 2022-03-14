@@ -91,25 +91,19 @@
 
 
 {% macro build_lock(label, time, locked) %}
-<table class="table is-bordered" style="table-layout: fixed; width: 100%;">
+<table class="table is-bordered" style="table-layout: fixed; width: 100%; text-align: center;">
     <tbody>
         <th>
+            {% if  locked %}
+            <ion-icon name="lock-closed" style="color: red;"></ion-icon>
+            {% else %}
+            <ion-icon name="lock-open" style="color: green;"></ion-icon>
+            {% endif %}
             {{ label }}
         </th>
         <td>{{ time }}
         </td>
-        <td>
-            {% if  locked %}
-            <ion-icon name="lock-closed" style="color: red;"></ion-icon>
-            Tipování zamčeno!
-            <ion-icon name="lock-closed" style="color: red;"></ion-icon>
-
-            {% else %}
-            <ion-icon name="lock-open" style="color: green;"></ion-icon>
-            Tipování odemčeno!
-            <ion-icon name="lock-open" style="color: green;"></ion-icon>
-        </td>
-        {% endif %}
+        
     </tbody>
 </table>
 {% endmacro %}
