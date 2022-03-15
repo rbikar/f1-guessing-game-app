@@ -313,20 +313,29 @@ def guess_overview():
 @main.route("/guess_overview/race")
 @login_required
 def guess_overview_race():
-    return render_template("wip.html")
-    result = "X"
-    result_sum = "0"
-    admin = True if current_user.role == "ADMIN" else False
-
     races = db.session.query(Race).all()
     users = db.session.query(User).all()
+    current_user_id = current_user.id
 
+    data = []
+
+    for race in sorted(races, key=lambda x: x.race_start):
+        thead, rows = get_rows_race_overview(race, users, current_user_id)
+        data.append({"thead": thead, "rows": rows})
+    return render_template("guess_overview_race.html", data=data)
+
+
+def get_rows_race_overview(race, users, current_user_id):
+    result = "---"
+    result_sum = "---"
     thead = [
         "Tip",
         "Výsledek",
     ]
     quali_row = ["Vítěz kvalifikace", result]
-    sprint_row = ["Vítěz sprintu", result]
+    if race.type == "SPRINT":
+        sprint_row = ["Vítěz sprintu", result]
+
     _1_row = ["Vítěz závodu", result]
     _2_row = ["Druhé místo", result]
     _3_row = ["Třetí místo", result]
@@ -337,7 +346,6 @@ def guess_overview_race():
 
     keys = [
         "quali",
-        "sprint",
         "first",
         "second",
         "third",
@@ -345,72 +353,11 @@ def guess_overview_race():
         "fastest_lap",
         "bonus",
     ]
+    if race.type == "SPRINT":
+        keys.insert(1, "sprint")
 
-    for race in races:
-        race_id = race.id
-        thead[0] = race.name
-        for user in sorted(users, key=lambda x: x.username):
-            guess = (
-                db.session.query(RaceGuess)
-                .filter(RaceGuess.user_id == user.id)
-                .filter(RaceGuess.race_id == race_id)
-                .first()
-            )
-            if guess is None:
-                # vsede vykricnik
-                pass
-
-            locks = get_locks_race(race)
-            # import pdb;pdb.set_trace()
-
-            thead.extend([user.username, result_sum])
-
-            value = (
-                guess.quali
-                if can_see_guess(locks["quali_start"], user, current_user, admin)
-                else "LOCK"
-            )
-            can_see = can_see_guess(locks["quali_start"], user, current_user, admin)
-            if guess.quali:
-                if can_see:
-                    value = guess.quali
-                else:
-                    value = "LK"
-            else:
-                value = "NT"
-
-            quali_row.extend([value, result_sum])
-
-            value = (
-                guess.sprint
-                if can_see_guess(locks["sprint_start"], user, current_user, admin)
-                else "LOCK"
-            )
-            # if race.type == "SPRINT":
-            sprint_row.extend([guess.sprint, result_sum])
-            race_can_see = can_see_guess(locks["race_start"], user, current_user, admin)
-
-            value = guess.first if race_can_see else "LOCK"
-            _1_row.extend([value, result_sum])
-            value = guess.second if race_can_see else "LOCK"
-            _2_row.extend([value, result_sum])
-            value = guess.third if race_can_see else "LOCK"
-            _3_row.extend([value, result_sum])
-
-            value = guess.fastest_lap if race_can_see else "LOCK"
-            fastest_lap_row.extend([value, result_sum])
-
-            value = guess.third if race_can_see else "LOCK"
-            safety_car_row.extend([value, result_sum])
-
-            value = guess.bonus if race_can_see else "LOCK"
-            bonus_row.extend([value, result_sum])
-
-        break  #### zatim na test
-
-    data = [
+    rows = [
         quali_row,
-        sprint_row,
         _1_row,
         _2_row,
         _3_row,
@@ -419,19 +366,96 @@ def guess_overview_race():
         bonus_row,
     ]
 
-    return render_template("guess_overivew_race.html", thead=thead, data=data)
+    if race.type == "SPRINT":
+        rows.insert(1, sprint_row)
 
+    row_map = {key: row for key, row in zip(keys, rows)}
+    race_id = race.id
+    thead[0] = race.name.replace("Grand Prix", "GP")
+    locks = get_locks_race(race)
 
-def lock_or_no_guess(guess, lock):
-    if guess:
-        return "ZAMEK"
-    return "CHYBI TIP!"
+    for user in sorted(users, key=lambda x: x.username):
+        thead.extend([user.username, result_sum])
+        guess = (
+            db.session.query(RaceGuess)
+            .filter(RaceGuess.user_id == user.id)
+            .filter(RaceGuess.race_id == race_id)
+            .first()
+        )
+
+        if guess is None:
+            guess_set = False
+        else:
+            guess_set = True
+
+        for attr, row in row_map.items():
+            if race.type != "SPRINT" and attr == "sprint":
+                continue
+            value = get_attr_value(
+                guess_set,
+                guess,
+                attr,
+                is_attr_locked(locks, attr),
+                current_user_id,
+                user,
+            )
+
+            row.extend([value, "---"])
+    return thead, rows
 
 
 @main.route("/guess_overview/season")
 @login_required
 def guess_overview_season():
     return render_template("wip.html")
+    users = db.session.query(User).all()
+    current_user_id = current_user.id
+
+    result = "---"
+    result_sum = "---"
+    thead = [
+        "Jezdci",
+    ]
+    drivers = db.session.query(SeasonGuess).filter(SeasonGuess.user_id == user.id).all()
+    lock = bool(os.getenv("SEASON_LOCK", ""))
+
+    (
+        drivers_meta,
+        constructors_meta,
+    ) = get_label_attr_season()  ##list of {label:VAL, attr:VAL}
+    keys = [item["attr"] for item in drivers_meta]
+    rows = [[driver.code] for driver in drivers]
+    driver_map = {key: row for key, row in zip(keys, rows)}
+    for user in sorted(users, key=lambda x: x.username):
+        thead.extend([user.username, result_sum])
+
+        guess = (
+            db.session.query(SeasonGuess).filter(SeasonGuess.user_id == user.id).first()
+        )
+
+        if guess:
+            guess_set = True
+        else:
+            guess_set = False
+
+        for attr, row in driver_map:
+            value = get_attr_value(guess_set, guess, attr, lock, current_user_id, user)
+            row.extend([value, "---"])
+
+    return thead
+
+
+def get_attr_value(guess_set, guess, attr, lock, current_user_id, user):
+    if not guess_set:
+        value = "N"
+    else:
+        value = getattr(guess, attr)
+        if value is None or value == "":
+            value = "N"  ### not set
+        elif current_user_id != user.id and not lock:
+            value = "L"  ### locked for other user
+
+    return value
 
 
 @main.route("/rules")
