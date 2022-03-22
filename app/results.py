@@ -1,4 +1,3 @@
-from webbrowser import get
 import requests
 from time import sleep
 
