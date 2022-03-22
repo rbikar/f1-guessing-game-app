@@ -12,6 +12,7 @@ from app.models import (
     RaceGuess,
     SeasonGuess,
     User,
+    RaceResult,
 )
 
 from .utils import (
@@ -22,6 +23,8 @@ from .utils import (
     is_attr_locked,
     can_see_guess,
 )
+
+from .results import get_result_for_round, evaluate_result_for_user
 
 main = Blueprint("main", __name__)
 
@@ -283,7 +286,7 @@ def season_post():
 @main.route("/guess_overview")
 @login_required
 def guess_overview():
-    if os.getenv("WIP", ""):
+    if os.getenv("WIP", "1"):
         return render_template("wip.html")
     data = {}
     users = db.session.query(User).all()
@@ -304,7 +307,6 @@ def guess_overview():
             row = [user.username, guess.quali]
             rows.append(row)
 
-    print(rows)
     return render_template(
         "guess_overview.html", data=data, table_head=table_head, rows=rows
     )
@@ -325,32 +327,41 @@ def guess_overview_race():
     return render_template("guess_overview_race.html", data=data)
 
 
+def get_result(result, attr):
+    return getattr(result, attr) if result else "-"
+
+
 def get_rows_race_overview(race, users, current_user_id):
-    result = "---"
+    result = db.session.query(RaceResult).filter(RaceResult.race_id == race.id).first()
+
     result_sum = "---"
     thead = [
         "Tip",
         "Výsledek",
     ]
-    quali_row = ["Vítěz kvalifikace", result]
+    quali_result = get_result(result, "quali")
+    quali_row = ["Vítěz kvalifikace", quali_result]
+
     if race.type == "SPRINT":
-        sprint_row = ["Vítěz sprintu", result]
+        sprint_result = get_result(result, "sprint")
 
-    _1_row = ["Vítěz závodu", result]
-    _2_row = ["Druhé místo", result]
-    _3_row = ["Třetí místo", result]
+        sprint_row = ["Vítěz sprintu", sprint_result]
 
-    fastest_lap_row = ["Nejrychlejší kolo", result]
-    safety_car_row = ["Výjezd safety car", result]
-    bonus_row = ["Bonusový tip", result]
+    _1_row = ["Vítěz závodu", get_result(result, "first")]
+    _2_row = ["Druhé místo", get_result(result, "second")]
+    _3_row = ["Třetí místo", get_result(result, "third")]
+
+    fastest_lap_row = ["Nejrychlejší kolo", get_result(result, "fastest_lap")]
+    safety_car_row = ["Výjezd safety car", get_result(result, "safety_car")]
+    bonus_row = ["Bonusový tip", get_result(result, "bonus")]
 
     keys = [
         "quali",
         "first",
         "second",
         "third",
-        "safety_car",
         "fastest_lap",
+        "safety_car",
         "bonus",
     ]
     if race.type == "SPRINT":
@@ -375,7 +386,7 @@ def get_rows_race_overview(race, users, current_user_id):
     locks = get_locks_race(race)
 
     for user in sorted(users, key=lambda x: x.username):
-        thead.extend([user.username, result_sum])
+
         guess = (
             db.session.query(RaceGuess)
             .filter(RaceGuess.user_id == user.id)
@@ -385,7 +396,15 @@ def get_rows_race_overview(race, users, current_user_id):
 
         if guess is None:
             guess_set = False
+            result_for_user = None
+            thead.extend([user.username, "-"])
         else:
+            if result:
+                result_for_user, points_sum = evaluate_result_for_user(result, guess)
+                thead.extend([user.username, points_sum])
+            else:
+                result_for_user = None
+                thead.extend([user.username, "-"])
             guess_set = True
 
         for attr, row in row_map.items():
@@ -400,7 +419,9 @@ def get_rows_race_overview(race, users, current_user_id):
                 user,
             )
 
-            row.extend([value, "---"])
+            points = result_for_user[attr] if result_for_user else "-"
+
+            row.extend([value, points])
     return thead, rows
 
 
@@ -462,3 +483,159 @@ def get_attr_value(guess_set, guess, attr, lock, current_user_id, user):
 @login_required
 def rules():
     return render_template("rules.html")
+
+
+#### admin only / TODO move to different router
+
+
+@main.route("/result/<string:short_name>/evaluate", methods=["GET"])
+@login_required
+def evaluate_result(short_name):
+    if current_user.role != "ADMIN":
+        raise Exception
+
+    race = db.session.query(Race).filter(Race.short_name == short_name).first()
+    race_id = race.id
+    bonus_question = (
+        db.session.query(BonusGuess).filter(BonusGuess.race_id == race_id).first().text
+    )
+    bonus_answer = (
+        db.session.query(RaceResult).filter(RaceResult.race_id == race_id).first().bonus
+    )
+    bonus_table = [bonus_question, bonus_answer]
+
+    guesses = db.session.query(RaceGuess).filter(RaceGuess.race_id == race_id)
+    thead = ["USERNAME", "BONUSGUESS"]
+    rows = []
+    for guess in guesses:
+        bonus_guess = guess.bonus
+        username = (
+            db.session.query(User).filter(User.id == guess.user_id).first().username
+        )
+
+        rows.append([username, bonus_guess])
+
+    return render_template(
+        "evaluate.html", race=race, thead=thead, rows=rows, bonus_table=bonus_table
+    )
+
+
+@main.route("/result/<string:short_name>/evaluate", methods=["POST"])
+@login_required
+def evaluate_result_post(short_name):
+    if current_user.role != "ADMIN":
+        raise Exception
+    race = db.session.query(Race).filter(Race.short_name == short_name).first()
+    race_id = race.id
+    bonus_question = (
+        db.session.query(BonusGuess).filter(BonusGuess.race_id == race_id).first().text
+    )
+    bonus_answer = (
+        db.session.query(RaceResult).filter(RaceResult.race_id == race_id).first().bonus
+    )
+    bonus_table = [bonus_question, bonus_answer]
+
+    guesses = db.session.query(RaceGuess).filter(RaceGuess.race_id == race_id)
+    thead = ["USERNAME", "BONUSGUESS"]
+    rows = []
+    for guess in guesses:
+        bonus_guess = guess.bonus
+        username = (
+            db.session.query(User).filter(User.id == guess.user_id).first().username
+        )
+
+        rows.append([username, bonus_guess])
+
+    users = db.session.query(User).all()
+    for user in users:
+        bonus_ok = True if request.form.get(user.username) else False
+        race_guess = (
+            db.session.query(RaceGuess)
+            .filter(RaceGuess.user_id == user.id)
+            .filter(RaceGuess.race_id == race_id)
+            .first()
+        )
+        if race_guess:
+            race_guess.bonus_ok = bonus_ok
+            db.session.commit()
+
+    return render_template(
+        "evaluate.html", race=race, thead=thead, rows=rows, bonus_table=bonus_table
+    )
+
+
+@main.route("/result/<string:short_name>", methods=["GET"])
+@login_required
+def load_results(short_name):
+    if current_user.role != "ADMIN":
+        raise Exception
+
+    race = db.session.query(Race).filter(Race.short_name == short_name).first()
+
+    result = db.session.query(RaceResult).filter(RaceResult.race_id == race.id).first()
+    loaded = False
+    if result:
+        loaded = True
+        flash("ALREADY LOADED")
+
+    return render_template("result.html", race=race, loaded=loaded)
+
+
+@main.route("/result/<string:short_name>", methods=["POST"])
+@login_required
+def load_results_post(short_name):
+    if current_user.role != "ADMIN":
+        raise Exception
+
+    race = db.session.query(Race).filter(Race.short_name == short_name).first()
+
+    result = db.session.query(RaceResult).filter(RaceResult.race_id == race.id).first()
+    loaded = False
+    if result:
+        loaded = True
+        flash("ALREADY LOADED")
+    else:
+        result_data = get_result_for_round(
+            race.round, True if race.type == "SPRINT" else False
+        )
+
+        safety_car_result = request.form.get("safety_car")
+        bonus_result = request.form.get("bonus")
+
+        result = RaceResult(
+            quali=result_data["quali"],
+            sprint=result_data["sprint"],
+            first=result_data["first"],
+            second=result_data["second"],
+            third=result_data["third"],
+            fastest_lap=result_data["fastest_lap"],
+            safety_car=safety_car_result,
+            bonus=bonus_result,
+            race_id=race.id,
+        )
+        db.session.add(result)
+        db.session.commit()
+        flash("RESULT SAVED TO DB")
+
+    return render_template("result.html", race=race, loaded=loaded)
+
+
+@main.route("/results/", methods=["GET"])
+@login_required
+def results_table():
+    if current_user.role != "ADMIN":
+        raise Exception
+    races = db.session.query(Race).all()
+
+    def get_row(race):
+        return {
+            "name": race.name.replace("Grand Prix", "GP"),
+            "short_name": race.short_name,
+        }
+
+    rows = []
+    for race in races:
+        row = get_row(race)
+        rows.append(row)
+
+    return render_template("results_table.html", rows=rows)

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "driver_select.html" import  build_submit, build_safety_car, build_bonus %}
+
+{% block content %}
+<div class="box">
+    {% with messages = get_flashed_messages() %} {% if messages %} <div class="notification is-success">
+        {{ messages[0] }}
+    </div> {% endif %} {% endwith %} 
+<form method="POST" action="/result/{{race.short_name}}">
+
+
+{{ build_safety_car("Počet safety car", 15,  None) }}
+{{ build_bonus("Bonus", None) }}    
+
+{{ build_submit("LOAD") }}
+
+</form>
+</div>
+
+{% if loaded %}
+<a href="/result/{{race.short_name}}/evaluate"> VYHODNOTIT BONUSY</a>
+{% endif%}
+
+{% endblock %}

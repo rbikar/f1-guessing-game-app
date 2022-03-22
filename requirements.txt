@@ -6,3 +6,5 @@ Flask-SQLAlchemy
 Werkzeug
 psycopg2
 pytz
+Flask-Migrate
+requests
