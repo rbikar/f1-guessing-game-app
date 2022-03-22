@@ -4,9 +4,12 @@ from datetime import datetime, timedelta
 
 from flask import Flask, session
 from flask_login import LoginManager
+from flask_migrate import Migrate
 
 import app.models
 from app import db
+
+migrate = Migrate()
 
 
 def create_app(db_uri=None):
@@ -20,6 +23,7 @@ def create_app(db_uri=None):
         flask_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///test.sqlite3"
 
     db.init_app(flask_app)
+    migrate.init_app(flask_app, db)
 
     login_manager = LoginManager()
     login_manager.login_view = "auth.login"

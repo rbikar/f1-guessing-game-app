@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from "driver_select.html" import  build_submit, build_safety_car, build_bonus %}
+
+{% block content %}
+<div class="box">
+<h2>VYHODNOTIT BONUSY</h2>
+</div>
+
+
+<div class="box">
+
+<table class="table">
+    <thead>
+
+        <th>OTAZKA</th>
+        <th>ODPOVED</th>
+    </thead>
+    <tbody>
+        <tr>
+        {% for data in bonus_table %}
+        <td>
+
+           {{ data }}
+        </td>
+        {% endfor %}
+    </tr>
+    </tbody>
+
+
+</table>
+</div>
+
+<div class="box">
+<form method="POST" action="/result/{{race.short_name}}/evaluate">
+<table class="table">
+    <thead>
+
+        <th>{{thead[0]}}</th>
+        <th>{{thead[1]}}</th>
+        <th>TO CHECK</th>
+
+    </thead>
+    <tbody> 
+        {% for row in rows %}
+        <tr>
+            <td>{{ row[0]}} </td>
+            <td>{{ row[1]}} </td>
+            <td>
+                <input type="checkbox" id={{ row[0]}} name={{ row[0]}} >
+            </td>
+        </tr>
+        {% endfor %}
+
+    </tbody>
+<thead>
+
+</thead>
+</table>
+{{ build_submit("VYHODNOTIT") }}
+</form>
+</div>
+
+{% endblock %}
+
+

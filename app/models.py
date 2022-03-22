@@ -27,7 +27,22 @@ class Race(db.Model):
     round = db.Column(db.String(100))
 
 
-####  vysledky do jine tabulky
+class RaceResult(db.Model):
+    __tablename__ = "raceresult"
+
+    id = db.Column(db.Integer, primary_key=True)
+    race_id = db.Column(db.Integer, db.ForeignKey("race.id"), unique=True)
+
+    quali = db.Column(db.String(100))
+    sprint = db.Column(db.String(100))
+
+    first = db.Column(db.String(100))
+    second = db.Column(db.String(100))
+    third = db.Column(db.String(100))
+
+    fastest_lap = db.Column(db.String(100))
+    safety_car = db.Column(db.String(100))
+    bonus = db.Column(db.String(100))
 
 
 class RaceGuess(db.Model):
@@ -50,6 +65,8 @@ class RaceGuess(db.Model):
     fastest_lap = db.Column(db.String(100))
     safety_car = db.Column(db.Integer)
     bonus = db.Column(db.String(100))
+
+    bonus_ok = db.Column(db.Boolean)
 
 
 class SeasonGuess(db.Model):

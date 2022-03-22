@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% from "driver_select.html" import build_row_result %}
+<div class="box">
+
+    <table class="table" style="text-align:center">
+
+        <tbody>
+            {% for row in rows %}
+            {{ build_row_result(row, false) }}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
