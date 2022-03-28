@@ -403,7 +403,7 @@ def get_rows_race_overview(race, users, current_user_id):
         else:
             if result:
                 result_for_user, points_sum = evaluate_result_for_user(result, guess)
-                thead.extend([user.username, f"{points_sum} b"])
+                thead.extend([user.username, points_sum])
             else:
                 result_for_user = None
                 thead.extend([user.username, "-"])
@@ -421,7 +421,7 @@ def get_rows_race_overview(race, users, current_user_id):
                 user,
             )
 
-            points = f"{result_for_user[attr]} b" if result_for_user else "-"
+            points = {result_for_user[attr]} if result_for_user else "-"
 
             row.extend([value, points])
     return thead, rows
