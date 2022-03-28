@@ -12,7 +12,7 @@
 </div>
 <div class="box"> {% with messages = get_flashed_messages() %} {% if messages %} <div class="notification is-success">
         {{ messages[0] }}
-    </div> {% endif %} {% endwith %} <form method="POST" action="/race/{{race.short_name}}">
+    </div> {% endif %} {% endwith %} <form method="POST" action="/race/{{race.short_name}}" id="race"  onsubmit='return validateFormRace();'>
         <fieldset {%if  locks.quali_start %} disabled {% endif %} style="margin: 15px; border: none; ">
             {{ build_driver_select("Vítěz kvalifikace", "quali", drivers, guess.quali) }}
         </fieldset> {% if race_type == "SPRINT" %} <fieldset {%if  locks.sprint_start %} disabled {% endif %}
@@ -32,4 +32,8 @@
     </form>
 </div>
 </div>
-</div> {% endblock %}
+</div>
+
+<script src="{{url_for('static', filename='validate_podium.js')}}"></script>
+
+{% endblock %}

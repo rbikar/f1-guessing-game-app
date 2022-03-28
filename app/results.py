@@ -1,5 +1,6 @@
-import requests
 from time import sleep
+
+import requests
 
 API = "https://ergast.com/api/f1/2022"
 
@@ -77,7 +78,7 @@ def evaluate_result_for_user(result, guess):
         podium = [getattr(result, attr) for attr in attrs]
     else:
         podium = []
-    results_map_podium = {attr: 0 for attr in attrs}
+    results_map_podium = {attr: 0.0 for attr in attrs}
 
     for index, attr in enumerate(attrs):
         value = getattr(guess, attr)
@@ -86,13 +87,13 @@ def evaluate_result_for_user(result, guess):
         if podium and value == podium[index]:
             results_map_podium[attr] += 0.5
             if attr == "first":
-                results_map_podium[attr] += 1
+                results_map_podium[attr] += 1.0
 
     attrs = ["fastest_lap", "quali", "safety_car"]
     if result and result.sprint:
         attrs.append("sprint")
 
-    results_map_other = {attr: 0 for attr in attrs}
+    results_map_other = {attr: 0.0 for attr in attrs}
 
     for attr in attrs:
         value = getattr(guess, attr)
@@ -102,12 +103,12 @@ def evaluate_result_for_user(result, guess):
                 value = float(value)
                 guess_value = float(guess_value)
             if guess_value == value:
-                results_map_other[attr] += 1
+                results_map_other[attr] += 1.0
 
     if guess.bonus_ok:
-        results_map_other["bonus"] = 1
+        results_map_other["bonus"] = 1.0
     else:
-        results_map_other["bonus"] = 0
+        results_map_other["bonus"] = 0.0
 
     results_map_podium.update(results_map_other)
 

@@ -1,4 +1,5 @@
 import os
+from collections import OrderedDict
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
@@ -10,21 +11,19 @@ from app.models import (
     Driver,
     Race,
     RaceGuess,
+    RaceResult,
     SeasonGuess,
     User,
-    RaceResult,
 )
 
+from .results import evaluate_result_for_user, get_result_for_round
 from .utils import (
     date_or_none,
     get_current_race,
     get_label_attr_season,
     get_locks_race,
     is_attr_locked,
-    can_see_guess,
 )
-
-from .results import get_result_for_round, evaluate_result_for_user
 
 main = Blueprint("main", __name__)
 
@@ -208,7 +207,9 @@ def season():
         lock = True
     data = {}
 
-    drivers = [driver.code for driver in db.session.query(Driver).all()]
+    drivers = [
+        driver.code for driver in db.session.query(Driver).all() if driver.code != "HUL"
+    ]
     constructors = [constr.code for constr in db.session.query(Constructor).all()]
     label_attrs_lists = get_label_attr_season()
     data["drivers"] = label_attrs_lists[0]
@@ -240,7 +241,9 @@ def season_post():
 
     data = {}
 
-    drivers = [driver.code for driver in db.session.query(Driver).all()]
+    drivers = [
+        driver.code for driver in db.session.query(Driver).all() if driver.code != "HUL"
+    ]
     constructors = [constr.code for constr in db.session.query(Constructor).all()]
     label_attrs_lists = get_label_attr_season()
 
@@ -334,7 +337,6 @@ def get_result(result, attr):
 def get_rows_race_overview(race, users, current_user_id):
     result = db.session.query(RaceResult).filter(RaceResult.race_id == race.id).first()
 
-    result_sum = "---"
     thead = [
         "Tip",
         "Výsledek",
@@ -401,7 +403,7 @@ def get_rows_race_overview(race, users, current_user_id):
         else:
             if result:
                 result_for_user, points_sum = evaluate_result_for_user(result, guess)
-                thead.extend([user.username, points_sum])
+                thead.extend([user.username, f"{points_sum} b"])
             else:
                 result_for_user = None
                 thead.extend([user.username, "-"])
@@ -419,51 +421,153 @@ def get_rows_race_overview(race, users, current_user_id):
                 user,
             )
 
-            points = result_for_user[attr] if result_for_user else "-"
+            points = f"{result_for_user[attr]} b" if result_for_user else "-"
 
             row.extend([value, points])
     return thead, rows
 
 
+@main.route("/top_players")
+@login_required
+def top_players():
+    users = db.session.query(User).all()
+    races = db.session.query(Race).all()
+    thead = ["Pořadí", "Hráč", "Body"]
+
+    rows = []
+    sums_for_users = []
+
+    for user in users:
+        sum_for_user = 0.0
+        for race in races:
+            result_for_race = (
+                db.session.query(RaceResult)
+                .filter(RaceResult.race_id == race.id)
+                .first()
+            )
+            guess = (
+                db.session.query(RaceGuess)
+                .filter(RaceGuess.user_id == user.id)
+                .filter(RaceGuess.race_id == race.id)
+                .first()
+            )
+            if not result_for_race or not guess:
+                points_sum = 0.0
+            else:
+                _, points_sum = evaluate_result_for_user(result_for_race, guess)
+            sum_for_user += points_sum
+
+        sums_for_users.append(
+            (
+                user.username,
+                sum_for_user,
+            )
+        )
+
+    for order, result in zip(
+        range(1, len(users) + 1),
+        sorted(sums_for_users, key=lambda x: x[1], reverse=True),
+    ):
+        row = [f"{order}.", result[0], result[1]]
+        rows.append(row)
+
+    return render_template("current_top_players.html", thead=thead, rows=rows)
+
+
 @main.route("/guess_overview/season")
 @login_required
 def guess_overview_season():
-    return render_template("wip.html")
     users = db.session.query(User).all()
-    current_user_id = current_user.id
 
-    result = "---"
-    result_sum = "---"
-    thead = [
+    thead_drivers = [
         "Jezdci",
+        "Výsledek",
     ]
-    drivers = db.session.query(SeasonGuess).filter(SeasonGuess.user_id == user.id).all()
-    lock = bool(os.getenv("SEASON_LOCK", ""))
 
-    (
-        drivers_meta,
-        constructors_meta,
-    ) = get_label_attr_season()  ##list of {label:VAL, attr:VAL}
-    keys = [item["attr"] for item in drivers_meta]
-    rows = [[driver.code] for driver in drivers]
-    driver_map = {key: row for key, row in zip(keys, rows)}
+    rows_drivers = []
     for user in sorted(users, key=lambda x: x.username):
-        thead.extend([user.username, result_sum])
+        thead_drivers.append(user.username)
 
+        result_driver = get_season_result_driver(user.username)
+        thead_drivers.append(result_driver)
+
+    guess_user_map = get_user_guess_map(users)
+    for order in range(1, 21):
+        label = "MISTR" if order == 1 else f"{order}."
+        result_for_driver = "-"  # TODO get result from data
+        row = [label, result_for_driver]
+        row.extend(season_row_driver(order, guess_user_map))
+        rows_drivers.append(row)
+
+    thead_constr = [
+        "Týmy",
+        "Výsledek",
+    ]
+
+    rows_constr = []
+    for user in sorted(users, key=lambda x: x.username):
+        thead_constr.append(user.username)
+
+        result_driver = get_season_result_constr(user.username)
+        thead_constr.append(result_driver)
+
+    for order in range(1, 11):
+        label = "MISTR" if order == 1 else f"{order}."
+        result_for_constr = "-"  # TODO get result from data
+        row = [label, result_for_constr]
+        row.extend(season_row_constr(order, guess_user_map))
+        rows_constr.append(row)
+
+    return render_template(
+        "guess_overview_season.html",
+        thead_drivers=thead_drivers,
+        rows_drivers=rows_drivers,
+        thead_constr=thead_constr,
+        rows_constr=rows_constr,
+    )
+
+
+def season_row_driver(order, user_guess_map):
+    row = []
+    attr = f"_{order}d"
+    for user, guess in user_guess_map.items():
+        if guess:
+            value = getattr(guess, attr)
+        else:
+            value = None
+
+        points = "-"  # TODO add point counting
+        row.append(value if value else "N")
+        row.append(f"{points}")
+
+    return row
+
+
+def season_row_constr(order, user_guess_map):
+    row = []
+    attr = f"_{order}c"
+    for user, guess in user_guess_map.items():
+        if guess:
+            value = getattr(guess, attr)
+        else:
+            value = None
+
+        points = "-"  # TODO add point counting
+        row.append(value if value else "N")
+        row.append(f"{points}")
+
+    return row
+
+
+def get_user_guess_map(users):
+    user_guess_map = OrderedDict()
+    for user in sorted(users, key=lambda x: x.username):
         guess = (
             db.session.query(SeasonGuess).filter(SeasonGuess.user_id == user.id).first()
         )
+        user_guess_map[user.username] = guess
 
-        if guess:
-            guess_set = True
-        else:
-            guess_set = False
-
-        for attr, row in driver_map:
-            value = get_attr_value(guess_set, guess, attr, lock, current_user_id, user)
-            row.extend([value, "---"])
-
-    return thead
+    return user_guess_map
 
 
 def get_attr_value(guess_set, guess, attr, lock, current_user_id, user):
@@ -477,6 +581,16 @@ def get_attr_value(guess_set, guess, attr, lock, current_user_id, user):
             value = "L"  ### locked for other user
 
     return value
+
+
+def get_season_result_driver(username):
+    drivers = "-"
+    return drivers
+
+
+def get_season_result_constr(username):
+    constructors = "-"
+    return constructors
 
 
 @main.route("/rules")
