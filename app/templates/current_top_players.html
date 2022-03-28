@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="box">
+    <h1 class="title">
+        Aktuální pořadí - závody
+    </h1>
+
+
+</div>
+<div class="box">
+    <table class="table  is-bordered is-striped" style="overflow-x:auto;">
+        <thead>
+            <tr>
+                {% for cell in thead %}
+                <th> {{cell}} </th>
+
+                {% endfor %}
+
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                {% for cell in row %}
+                <td>
+                    {% if cell == '1.' %}
+                    <ion-icon name="trophy" style="color: gold;  font-size: 20px; "></ion-icon>
+                    {% else %}
+                    {{cell}}
+                    {% endif %}
+
+
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
+
+{% endblock %}
