@@ -421,7 +421,7 @@ def get_rows_race_overview(race, users, current_user_id):
                 user,
             )
 
-            points = {result_for_user[attr]} if result_for_user else "-"
+            points = result_for_user[attr] if result_for_user else "-"
 
             row.extend([value, points])
     return thead, rows
