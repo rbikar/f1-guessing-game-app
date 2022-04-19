@@ -623,11 +623,9 @@ def evaluate_result(short_name):
     rows = []
     for guess in guesses:
         bonus_guess = guess.bonus
-        username = (
-            db.session.query(User).filter(User.id == guess.user_id).first().username
-        )
+        user = db.session.query(User).filter(User.id == guess.user_id).first()
 
-        rows.append([username, bonus_guess])
+        rows.append([user.username, bonus_guess, user.id])
 
     return render_template(
         "evaluate.html", race=race, thead=thead, rows=rows, bonus_table=bonus_table
@@ -654,15 +652,13 @@ def evaluate_result_post(short_name):
     rows = []
     for guess in guesses:
         bonus_guess = guess.bonus
-        username = (
-            db.session.query(User).filter(User.id == guess.user_id).first().username
-        )
+        user = db.session.query(User).filter(User.id == guess.user_id).first()
 
-        rows.append([username, bonus_guess])
+        rows.append([user.username, bonus_guess, user.id])
 
     users = db.session.query(User).all()
     for user in users:
-        bonus_ok = True if request.form.get(user.username) else False
+        bonus_ok = True if request.form.get(user.id) else False
         race_guess = (
             db.session.query(RaceGuess)
             .filter(RaceGuess.user_id == user.id)
