@@ -658,7 +658,7 @@ def evaluate_result_post(short_name):
 
     users = db.session.query(User).all()
     for user in users:
-        bonus_ok = True if request.form.get(user.id) else False
+        bonus_ok = True if request.form.get(str(user.id), "") == "on" else False
         race_guess = (
             db.session.query(RaceGuess)
             .filter(RaceGuess.user_id == user.id)
