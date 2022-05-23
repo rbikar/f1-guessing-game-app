@@ -96,13 +96,16 @@ def evaluate_result_for_user(result, guess):
     results_map_other = {attr: 0.0 for attr in attrs}
 
     for attr in attrs:
-        value = getattr(guess, attr)
+        guess_value = getattr(guess, attr) # value of user guess for race
         if result:
-            guess_value = getattr(result, attr)
-            if attr == "safety_car" and guess_value and value:
-                value = float(value)
-                guess_value = float(guess_value)
-            if guess_value == value:
+            result_value = getattr(result, attr) # value of race result
+            if attr == "safety_car":
+                try:
+                    guess_value = float(guess_value)
+                    result_value = float(result_value)
+                except TypeError:
+                    continue
+            if guess_value == result_value:
                 results_map_other[attr] += 1.0
 
     if guess.bonus_ok:
