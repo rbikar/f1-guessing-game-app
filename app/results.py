@@ -274,8 +274,10 @@ def season_result(bet, results_map, std_type=None):
     for pos in range(1, cfg["range"] + 1):
         points = 0
         attr = f"_{pos}{cfg['type']}"
-
-        bet_on_position = getattr(bet, attr)
+        if bet is None:
+            bet_on_position="N/S"
+        else:
+            bet_on_position = getattr(bet, attr)
 
         if bet_on_position == results_map[pos]:
             points += cfg["hit"]
