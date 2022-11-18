@@ -227,6 +227,8 @@ def get_position_for_driver_from_standings(driver, results):
 
 
 def get_position_from_season_bet(driver, bet):
+    if bet is None:
+        return "N/A"
     for pos in range(1, 21):
         attr = f"_{pos}d"
         bet_on_position = getattr(bet, attr)
