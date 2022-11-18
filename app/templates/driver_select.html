@@ -95,9 +95,9 @@
     <tbody>
         <th>
             {% if  locked %}
-            <ion-icon name="lock-closed" style="color: red;"></ion-icon>
+            <ion-icon name="lock-closed"  id="noguess"></ion-icon>
             {% else %}
-            <ion-icon name="lock-open" style="color: green;"></ion-icon>
+            <ion-icon name="lock-open" id="lock"></ion-icon>
             {% endif %}
             {{ label }}
         </th>

@@ -1,5 +1,6 @@
 import os
 from collections import OrderedDict
+from time import sleep
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
@@ -13,10 +14,20 @@ from app.models import (
     RaceGuess,
     RaceResult,
     SeasonGuess,
+    Standings,
     User,
 )
 
-from .results import evaluate_result_for_user, get_result_for_round
+from .results import (
+    evaluate_result_for_user,
+    get_constructors_standings,
+    get_drivers_standings,
+    get_result_for_round,
+    make_results_map,
+    season_result,
+    team_drivers_map,
+    team_match_results,
+)
 from .utils import (
     date_or_none,
     get_current_race,
@@ -436,6 +447,10 @@ def top_players():
 
     rows = []
     sums_for_users = []
+    sums_season = []
+    sums_total = []
+
+    season_result = compute_season_result(users)
 
     for user in users:
         sum_for_user = 0.0
@@ -464,6 +479,12 @@ def top_players():
             )
         )
 
+        sums_season.append((user.username, season_result[user.username]["total"]))
+
+        sums_total.append(
+            (user.username, sum_for_user + float(season_result[user.username]["total"]))
+        )
+
     for order, result in zip(
         range(1, len(users) + 1),
         sorted(sums_for_users, key=lambda x: x[1], reverse=True),
@@ -471,32 +492,62 @@ def top_players():
         row = [f"{order}.", result[0], result[1]]
         rows.append(row)
 
-    return render_template("current_top_players.html", thead=thead, rows=rows)
+    rows_season = []
+    for order, result in zip(
+        range(1, len(users) + 1),
+        sorted(sums_season, key=lambda x: x[1], reverse=True),
+    ):
+        row = [f"{order}.", result[0], result[1]]
+        rows_season.append(row)
+
+    rows_total = []
+    for order, result in zip(
+        range(1, len(users) + 1),
+        sorted(sums_total, key=lambda x: x[1], reverse=True),
+    ):
+        row = [f"{order}.", result[0], result[1]]
+        rows_total.append(row)
+
+    return render_template(
+        "current_top_players.html",
+        thead=thead,
+        rows=rows,
+        rows_season=rows_season,
+        rows_total=rows_total,
+        season=season_result,
+    )
 
 
 @main.route("/guess_overview/season")
 @login_required
 def guess_overview_season():
     users = db.session.query(User).all()
+    stgds = db.session.query(Standings).all()
 
     thead_drivers = [
         "Jezdci",
         "Výsledek",
     ]
+    season_results = compute_season_result(users)
 
     rows_drivers = []
     for user in sorted(users, key=lambda x: x.username):
         thead_drivers.append(user.username)
 
-        result_driver = get_season_result_driver(user.username)
+        result_driver = get_season_result_driver(user.username, season_results)
         thead_drivers.append(result_driver)
 
     guess_user_map = get_user_guess_map(users)
+
+    stgds_drivers = {
+        int(item.position): item.name for item in stgds if item.type == "DRIVER"
+    }
+
     for order in range(1, 21):
         label = "MISTR" if order == 1 else f"{order}."
-        result_for_driver = "-"  # TODO get result from data
+        result_for_driver = stgds_drivers[order]  # TODO get result from data
         row = [label, result_for_driver]
-        row.extend(season_row_driver(order, guess_user_map))
+        row.extend(season_row_driver(order, guess_user_map, season_results))
         rows_drivers.append(row)
 
     thead_constr = [
@@ -508,15 +559,44 @@ def guess_overview_season():
     for user in sorted(users, key=lambda x: x.username):
         thead_constr.append(user.username)
 
-        result_driver = get_season_result_constr(user.username)
-        thead_constr.append(result_driver)
+        result_constr = get_season_result_constr(user.username, season_results)
+        thead_constr.append(result_constr)
+
+    stgds_teams = {
+        int(item.position): item.name for item in stgds if item.type == "TEAM"
+    }
 
     for order in range(1, 11):
         label = "MISTR" if order == 1 else f"{order}."
-        result_for_constr = "-"  # TODO get result from data
+        result_for_constr = stgds_teams[order]
         row = [label, result_for_constr]
-        row.extend(season_row_constr(order, guess_user_map))
+        row.extend(season_row_constr(order, guess_user_map, season_results))
         rows_constr.append(row)
+
+    thead_team = ["Souboj v tymu", "Lepsi - horsi (vysl.)"]
+
+    rows_team = []
+    for user in sorted(users, key=lambda x: x.username):
+        thead_team.append(user.username)
+
+        result_team = get_season_team_match(user.username, season_results)
+        thead_team.append(result_team)
+
+    for team in sorted(
+        list(team_drivers_map.keys())
+    ):  ### udelat sort podle vyseldu TODO
+        row = [
+            team,
+        ]
+        better_worse = get_team_match_stdg_result(season_results, team)
+        row.append(better_worse)
+
+        results_for_users = team_match_row(
+            team, sorted(users, key=lambda x: x.username), season_results
+        )
+        row.extend(results_for_users)
+
+        rows_team.append(row)
 
     return render_template(
         "guess_overview_season.html",
@@ -524,10 +604,12 @@ def guess_overview_season():
         rows_drivers=rows_drivers,
         thead_constr=thead_constr,
         rows_constr=rows_constr,
+        thead_team=thead_team,
+        rows_team=rows_team,
     )
 
 
-def season_row_driver(order, user_guess_map):
+def season_row_driver(order, user_guess_map, season_results):
     row = []
     attr = f"_{order}d"
     for user, guess in user_guess_map.items():
@@ -536,14 +618,14 @@ def season_row_driver(order, user_guess_map):
         else:
             value = None
 
-        points = "-"  # TODO add point counting
+        points = season_results[user]["data"]["drivers"][order]["points"]
         row.append(value if value else "N")
         row.append(f"{points}")
 
     return row
 
 
-def season_row_constr(order, user_guess_map):
+def season_row_constr(order, user_guess_map, season_results):
     row = []
     attr = f"_{order}c"
     for user, guess in user_guess_map.items():
@@ -552,9 +634,41 @@ def season_row_constr(order, user_guess_map):
         else:
             value = None
 
-        points = "-"  # TODO add point counting
+        points = season_results[user]["data"]["teams"][order]["points"]
         row.append(value if value else "N")
         row.append(f"{points}")
+
+    return row
+
+
+def get_team_match_stdg_result(season_results, team):
+    for item in season_results.values():
+        result = item["data"]["team_match"][team]["stdgs"]
+        for driver, res in result.items():
+            if res == True:
+                better = driver
+            if res == False:
+                worse = driver
+        return f"{better} - {worse}"
+
+
+def team_match_row(team, users, season_results):
+    row = []
+    for user in users:  # user are sorted
+
+        result_for_user = (
+            season_results[user.username]["data"]["team_match"].get(team) or None
+        )
+        #        {'points': 0, 'bet': {'HAM': False, 'RUS': True}, 'stdgs': {'HAM': False, 'RUS': True}}
+        result = result_for_user["bet"]
+        for driver, res in result.items():
+            if res == True:
+                better = driver
+            if res == False:
+                worse = driver
+        if result_for_user:
+            row.append(f"{better} - {worse}")
+            row.append(f"{result_for_user['points']}")
 
     return row
 
@@ -583,14 +697,28 @@ def get_attr_value(guess_set, guess, attr, lock, current_user_id, user):
     return value
 
 
-def get_season_result_driver(username):
-    drivers = "-"
-    return drivers
+def get_season_result_driver(username, season_results):
+    out = 0
+    for data in season_results[username]["data"]["drivers"].values():
+        out += data["points"]
+
+    return out
 
 
-def get_season_result_constr(username):
-    constructors = "-"
-    return constructors
+def get_season_result_constr(username, season_results):
+    out = 0
+    for data in season_results[username]["data"]["teams"].values():
+        out += data["points"]
+
+    return out
+
+
+def get_season_team_match(username, season_results):
+    out = 0
+    for data in season_results[username]["data"]["team_match"].values():
+        out += data["points"]
+
+    return out
 
 
 @main.route("/rules")
@@ -730,9 +858,18 @@ def load_results_post(short_name):
     return render_template("result.html", race=race, loaded=loaded)
 
 
+@main.route("/results/load/", methods=["GET"])
+@login_required
+def load_standings_route():
+    if current_user.role != "ADMIN":
+        raise Exception
+    message = load_standings()
+    return redirect(url_for(".results_table", message=message))
+
+
 @main.route("/results/", methods=["GET"])
 @login_required
-def results_table():
+def results_table(message=None):
     if current_user.role != "ADMIN":
         raise Exception
     races = db.session.query(Race).all()
@@ -747,5 +884,93 @@ def results_table():
     for race in races:
         row = get_row(race)
         rows.append(row)
+    message = request.args.get("message")
+    if message:
+        flash(f"STANDINGS: {message}")
 
     return render_template("results_table.html", rows=rows)
+
+
+def load_standings():
+    drivers_stdgs = get_drivers_standings()
+    sleep(1)
+    team_stdgs = get_constructors_standings()
+    out = "ERROR"
+    _types = ("DRIVER", "TEAM")
+    for _type, stgds in zip(_types, [drivers_stdgs, team_stdgs]):
+        for item in stgds:
+            db_item = (
+                db.session.query(Standings)
+                .filter(Standings.type == _type)
+                .filter(Standings.name == item[_type.lower()])
+                .first()
+            )
+
+            if db_item is None:
+                # create new
+                new_item = Standings(
+                    position=item["position"],
+                    type=_type,
+                    name=item[_type.lower()],
+                    points=item["points"],
+                )
+                db.session.add(new_item)
+                db.session.commit()
+                out = "NEW"
+
+            else:
+                db_item.position = item["position"]
+                db_item.name = item[_type.lower()]
+                db_item.points = item["points"]
+                db.session.commit()
+                out = "UPDATE"
+                # update
+    return out
+
+
+def compute_season_result(users):
+    stdgs = db.session.query(Standings).all()
+
+    drivers = [item for item in stdgs if item.type == "DRIVER"]
+    teams = [item for item in stdgs if item.type == "TEAM"]
+
+    drivers_map = make_results_map(drivers)
+    teams_map = make_results_map(teams)
+
+    out = {}
+    for user in users:
+        season_guess = (
+            db.session.query(SeasonGuess).filter(SeasonGuess.user_id == user.id).first()
+        )
+        season_drivers_for_user = season_result(
+            season_guess, drivers_map, std_type="DRIVERS"
+        )
+        season_teams_for_user = season_result(season_guess, teams_map, std_type="TEAMS")
+        team_match_for_user = team_match_results(season_guess, drivers)
+
+        # total points per user
+        # import pdb; pdb.set_trace()
+        total_points = get_points_for_user(
+            season_drivers_for_user,
+            season_teams_for_user,
+            team_match_for_user,
+        )
+        out[user.username] = {
+            "total": total_points,
+            "data": {
+                "drivers": season_drivers_for_user,
+                "teams": season_teams_for_user,
+                "team_match": team_match_for_user,
+            },
+        }
+    # detailed points per user
+    return out
+
+
+def get_points_for_user(*dicts):
+    out = 0
+    for data in dicts:
+        for item in data.values():
+            out += item["points"]
+
+    return out
