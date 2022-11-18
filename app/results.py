@@ -206,7 +206,7 @@ def team_match_results(bet, results):
 
         hit = team_match_hit(first_better_bet, first_better_stdgs)
         out[team] = {
-            "points": 2 if hit else 0,
+            "points": 1 if hit else 0,
             "bet": {drivers[0]: first_better_bet, drivers[1]: not first_better_bet},
             "stdgs": {
                 drivers[0]: first_better_stdgs,
