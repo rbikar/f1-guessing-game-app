@@ -2,8 +2,17 @@
 
 {% block content %}
 {% from "driver_select.html" import build_row_result %}
-<div class="box">
 
+
+
+<div class="box">
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div class="notification is-success">
+      {{ messages[0] }}
+    </div>
+    {% endif %}
+    {% endwith %}
     <table class="table" style="text-align:center">
 
         <tbody>
@@ -12,5 +21,8 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <a href="/results/load/">LOAD STANDINGS</a>
 </div>
+
 {% endblock %}

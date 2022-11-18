@@ -5,11 +5,11 @@
     <h2>Vysvětlivky: </h2>
     <ul>
         <li>
-            <ion-icon name="lock-closed" style="color: green;"></ion-icon> Tip je zadán, ale je momentálně uzamčen pro
+            <ion-icon id="lock" name="lock-closed"></ion-icon> Tip je zadán, ale je momentálně uzamčen pro
             ostatní uživatele. Tipy ostatních je možné vidět až po začátku akce.
         </li>
         <li>
-            <ion-icon name="alert-circle" style="color: red;"></ion-icon> Tip není zadán, je třeba zadat před začátkem
+            <ion-icon id="noguess" name="alert-circle"></ion-icon> Tip není zadán, je třeba zadat před začátkem
             akce. Zadávání tipů se automaticky uzamče po oficiálním začátku akce.
         </li>
     </ul>
@@ -17,7 +17,7 @@
 
 {% for table in data %}
 <div class="box" style="overflow-x:auto;">
-    <table class="table is-bordered is-striped" > 
+    <table class="table is-bordered is-striped  is-hoverable" > 
         <thead>
             <tr>
                 {% for cell in table.thead %}
@@ -31,9 +31,9 @@
                 {% for cell in row %}
 
                 <td> {% if cell == "L" %}
-                    <ion-icon name="lock-closed" style="color: green;"></ion-icon>
+                    <ion-icon name="lock-closed" id="lock"></ion-icon>
                     {% elif cell == "N" %}
-                    <ion-icon name="alert-circle" style="color: red;"></ion-icon>
+                    <ion-icon name="alert-circle" id="noguess"></ion-icon>
                     {% else %}
                     {{cell}}
                     {% endif %}

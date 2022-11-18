@@ -96,9 +96,9 @@ def evaluate_result_for_user(result, guess):
     results_map_other = {attr: 0.0 for attr in attrs}
 
     for attr in attrs:
-        guess_value = getattr(guess, attr) # value of user guess for race
+        guess_value = getattr(guess, attr)  # value of user guess for race
         if result:
-            result_value = getattr(result, attr) # value of race result
+            result_value = getattr(result, attr)  # value of race result
             if attr == "safety_car":
                 try:
                     guess_value = float(guess_value)
@@ -116,3 +116,173 @@ def evaluate_result_for_user(result, guess):
     results_map_podium.update(results_map_other)
 
     return results_map_podium, sum([float(num) for num in results_map_podium.values()])
+
+
+def get_drivers_standings():
+    url = f"{API}/driverStandings.json"
+    response = requests.get(url)
+    data = response.json()
+
+    standings = data["MRData"]["StandingsTable"]["StandingsLists"][0]["DriverStandings"]
+    to_db_items = []
+    for item in standings:
+        position = item["position"]
+        points = item["points"]
+        driver = item["Driver"]["code"]
+        if driver in ("HUL", "DEV"):
+            continue
+
+        to_db_items.append({"position": position, "points": points, "driver": driver})
+
+    return to_db_items
+
+
+CONSTRUCTOR_ID_CODE_MAP = {
+    "red_bull": "REB",
+    "ferrari": "FER",
+    "mercedes": "MER",
+    "alpine": "ALP",
+    "mclaren": "MCL",
+    "alfa": "ALF",
+    "aston_martin": "ASM",
+    "haas": "HAS",
+    "alphatauri": "ALT",
+    "williams": "WIL",
+}
+
+# TODO new table for constructor: API_ID-CODE-FULLNAME
+
+
+def get_constructors_standings():
+    url = f"{API}/constructorStandings.json"
+    response = requests.get(url)
+    data = response.json()
+
+    standings = data["MRData"]["StandingsTable"]["StandingsLists"][0][
+        "ConstructorStandings"
+    ]
+    to_db_items = []
+    for item in standings:
+        position = item["position"]
+        points = item["points"]
+        team = CONSTRUCTOR_ID_CODE_MAP[item["Constructor"]["constructorId"]]
+        to_db_items.append({"position": position, "points": points, "team": team})
+
+    return to_db_items
+
+
+# SORT BY REAL TEAM STANDIGS
+# for pos in range...staci
+#     item[pos]
+team_drivers_map = {
+    "MER": ("HAM", "RUS"),
+    "REB": ("VER", "PER"),
+    "FER": ("LEC", "SAI"),
+    "MCL": ("RIC", "NOR"),
+    "ALP": ("ALO", "OCO"),
+    "ALF": ("ZHO", "BOT"),
+    "ALT": ("TSU", "GAS"),
+    "HAS": ("MSC", "MAG"),
+    "WIL": ("LAT", "ALB"),
+    "AST": ("VET", "STR"),
+}
+
+
+def team_match_results(bet, results):
+    out = {}
+    for team, drivers in team_drivers_map.items():
+        first_driver_bet = get_position_from_season_bet(drivers[0], bet)
+        first_driver_stdgs = get_position_for_driver_from_standings(drivers[0], results)
+        second_driver_bet = get_position_from_season_bet(drivers[1], bet)
+        second_driver_stdgs = get_position_for_driver_from_standings(
+            drivers[1], results
+        )
+        if first_driver_bet is None or second_driver_bet is None:
+            continue
+
+        # if 1st driver is better -> automatically it means that second driver is worse
+        first_better_bet = first_driver_bet < second_driver_bet
+        first_better_stdgs = first_driver_stdgs < second_driver_stdgs
+
+        hit = team_match_hit(first_better_bet, first_better_stdgs)
+        out[team] = {
+            "points": 2 if hit else 0,
+            "bet": {drivers[0]: first_better_bet, drivers[1]: not first_better_bet},
+            "stdgs": {
+                drivers[0]: first_better_stdgs,
+                drivers[1]: not first_better_stdgs,
+            },
+        }
+    return out
+
+
+def team_match_hit(bet, result):
+    return bet is result
+
+
+def get_position_for_driver_from_standings(driver, results):
+    for item in results:
+        if item.name == driver:
+            return int(item.position)
+
+
+def get_position_from_season_bet(driver, bet):
+    for pos in range(1, 21):
+        attr = f"_{pos}d"
+        bet_on_position = getattr(bet, attr)
+        if bet_on_position == driver:
+            return int(pos)
+
+
+def make_results_map(results):
+    results_map = {}
+    for item in results:
+        results_map[int(item.position)] = item.name
+
+    return results_map
+
+
+def season_result(bet, results_map, std_type=None):
+    # drivers
+    # 1st place +10
+    # presny tip +2
+    # vzajemny soubot +1
+    # teams
+    # 1st place +5
+    # presna polozka +2
+    pointing = {
+        "drivers": {
+            "champion": 10,
+            "hit": 2,
+            "team_match": 1,
+            "type": "d",
+            "range": 20,
+        },
+        "teams": {
+            "champion": 5,
+            "hit": 2,
+            "type": "c",
+            "range": 10,
+        },
+    }
+
+    result_to_display = {}  # position, typ, body
+    cfg = pointing[std_type.lower()]
+
+    for pos in range(1, cfg["range"] + 1):
+        points = 0
+        attr = f"_{pos}{cfg['type']}"
+
+        bet_on_position = getattr(bet, attr)
+
+        if bet_on_position == results_map[pos]:
+            points += cfg["hit"]
+            if pos == 1:
+                points += cfg["champion"]
+
+        result_to_display[pos] = {
+            "points": points,
+            "type": cfg["type"],
+        }
+
+    return result_to_display

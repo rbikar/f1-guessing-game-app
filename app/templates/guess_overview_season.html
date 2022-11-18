@@ -1,8 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="box"  style="overflow-x:auto;">
-<table class="table  is-bordered is-striped">
+<div class="box" id="big_table">
+    <h1 class="title">
+        Pohár jezdců
+    </h1>
+<table class="table is-bordered is-striped has-sticky-header  is-hoverable">
+
     <thead>
         <tr>
             {% for cell in thead_drivers %}
@@ -18,7 +22,7 @@
             {% for cell in row %}
             <td>
             {% if cell == "N" %}
-            <ion-icon name="alert-circle" style="color: red;"></ion-icon>
+            <ion-icon name="alert-circle"  id="noguess"></ion-icon>
             {% else %}
             {{cell}} 
             
@@ -32,8 +36,11 @@
 </table>
 </div>
 
-<div class="box"  style="overflow-x:auto;">
-    <table class="table  is-bordered is-striped">
+<div class="box" id="big_table">
+    <h1 class="title">
+        Pohár konstruktérů
+    </h1>
+    <table class="table is-bordered is-striped  is-hoverable">
         <thead>
             <tr>
                 {% for cell in thead_constr %}
@@ -49,7 +56,7 @@
                 {% for cell in row %}
                 <td>
                 {% if cell == "N" %}
-                <ion-icon name="alert-circle" style="color: red;"></ion-icon>
+                <ion-icon name="alert-circle" id="noguess"></ion-icon>
                 {% else %}
                 {{cell}} 
                 
@@ -63,7 +70,41 @@
     </table>
     </div>
 
+    <div class="box" id="big_table">
+        <h1 class="title">
+            Souboj v týmu
+        </h1>
+        <table class="table is-bordered is-striped  is-hoverable">
+            <thead>
+                <tr>
+                    {% for cell in thead_team %}
+                    <th> {{cell}} </th>
+        
+                    {% endfor %}
+        
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows_team %}
+                <tr>
+                    {% for cell in row %}
+                    <td>
+                    {% if cell == "N" %}
+                    <ion-icon name="alert-circle" id="noguess"></ion-icon>
+                    {% else %}
+                    {{cell}} 
+                    
+                    
+                    {% endif %}
+                </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
 
+        
 {% endblock %}
 
 

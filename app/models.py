@@ -148,3 +148,15 @@ class BonusGuess(db.Model):
     text = db.Column(db.String(500))
     type = db.Column(db.String(100))
     race_id = db.Column(db.Integer, db.ForeignKey("race.id"))
+
+
+class Standings(db.Model):
+    __tablename__ = "standings"
+    id = db.Column(
+        db.Integer, primary_key=True
+    )  # primary keys are required by SQLAlchemy
+
+    position = db.Column(db.String(20))
+    type = db.Column(db.String(100))
+    name = db.Column(db.String(20), unique=True)
+    points = db.Column(db.String(20))

@@ -7,3 +7,24 @@
     -ms-hyphens: unset;
     hyphens: unset;
   }
+
+ion-icon#lock {
+  color: green;
+}
+
+
+ion-icon#noguess {
+  color: red;
+}
+
+#trophy {
+  color: gold;
+  font-size: 20px;
+}
+
+div#big_table {
+  overflow-x:auto;
+  overflow-y:auto;
+}
+
+
