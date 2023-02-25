@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "F1guessingapp"
+authors = [
+    {name = "Robert Bikar", email = "robertobikar@gmail.com"},
+]
+description = "TODO My package description"
+readme = "README.md"
+requires-python = ">=3.10"
+keywords = ["f1", "web"]
+license = {text = "GPL-3"}
+classifiers = [
+    "Framework :: Flask",
+    "Programming Language :: Python :: 3",
+]
+version= "0.0.1"
+dependencies = [
+    "Flask",
+    "gunicorn",
+    "Jinja2",
+    "Flask-Login",
+    "Flask-SQLAlchemy",
+    "Werkzeug",
+    "pytz",
+    "Flask-Migrate",
+    "requests",
+    "more_executors",
+]
+
+[tool.setuptools.packages]
+find = {}  # Scan the project directory with the default parameters

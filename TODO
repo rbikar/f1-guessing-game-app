@@ -1,0 +1,5 @@
+pre-commit autoupdate
+mypy
+other static checks (sast, bandit)
+poetry or other tool for having up-to-date deps\
+drivers - active for races. active for season in DB
