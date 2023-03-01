@@ -32,7 +32,7 @@ def date_or_none(date):
 def get_locks_race(race):
     locks = {}
     now = datetime.utcnow()
-    now = datetime(2023, 3, 5, 15, 59)
+    #now = datetime(2023, 3, 5, 15, 59)
     utc_now = now.replace(tzinfo=pytz.utc)
 
     for attr in ["qualification_date", "sprint_date", "race_date"]:
