@@ -2,7 +2,7 @@ from time import sleep
 
 import requests
 
-API = "https://ergast.com/api/f1/2022"
+API = "https://ergast.com/api/f1/2023"
 
 
 def get_result(round, rank):
@@ -129,7 +129,7 @@ def get_drivers_standings():
         position = item["position"]
         points = item["points"]
         driver = item["Driver"]["code"]
-        if driver in ("HUL", "DEV"):
+        if driver in ("DRU"):
             continue
 
         to_db_items.append({"position": position, "points": points, "driver": driver})

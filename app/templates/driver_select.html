@@ -64,14 +64,14 @@
 
 {% macro build_submit(label) %}
 {{ form_item_start("", true) }}
-<input class="button is-danger is-large is-fullwidth" id="submit_guess" type="submit" value={{label}}>
+<input class="button is-success is-large is-fullwidth" id="submit_guess" type="submit" value={{label}}>
 {{ form_item_end() }}
 {% endmacro %}
 
 
 {% macro build_cancel(label) %}
 {{ form_item_start("", true) }}
-<input class="button is-success is-large is-fullwidth" type="reset" value={{label}}>
+<input class="button  is-danger is-large is-fullwidth" type="reset" value={{label}}>
 {{ form_item_end() }}
 {% endmacro %}
 
