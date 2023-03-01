@@ -4,7 +4,8 @@ Jinja2
 Flask-Login
 Flask-SQLAlchemy
 Werkzeug
-#psycopg2
+#psycopg2-binary
 pytz
-Flask-Migrate
-requests
+black
+pre-commit
+isort

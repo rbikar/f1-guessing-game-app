@@ -45,9 +45,9 @@ def create_app(db_uri=None):
     flask_app.register_blueprint(auth_blueprint)
 
     # blueprint for non-auth parts of app
-    from .main import main as main_blueprint
+    #from .main import main as main_blueprint
 
-    flask_app.register_blueprint(main_blueprint)
+    #flask_app.register_blueprint(main_blueprint)
 
     return flask_app
 
