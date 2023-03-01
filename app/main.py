@@ -7,11 +7,11 @@ from flask_login import current_user, login_required
 
 from app import db
 from app.models import (
-    BonusGuess,
+    BonusQuestion,
     Constructor,
     Driver,
     Race,
-    RaceGuess,
+    Bet,
     RaceResult,
     SeasonGuess,
     Standings,
@@ -60,32 +60,32 @@ def profile():
 def race_current():
     races = db.session.query(Race).all()
     race = get_current_race(races)
-    return redirect(url_for(".race", short_name=race.short_name))
+    return redirect(url_for(".race", external_circuit_id=race.external_circuit_id))
 
 
-@main.route("/race/<string:short_name>")
+@main.route("/race/<string:external_circuit_id>")
 @login_required
-def race(short_name):
+def race(external_circuit_id):
     drivers = [driver.code for driver in db.session.query(Driver).all()]
-    race = db.session.query(Race).filter(Race.short_name == short_name).first()
+    race = db.session.query(Race).filter(Race.external_circuit_id == external_circuit_id).first()
 
-    guess = (
-        db.session.query(RaceGuess)
-        .filter(RaceGuess.race_id == race.id)
-        .filter(RaceGuess.user_id == current_user.id)
-        .first()
+    bets = (
+        db.session.query(Bet)
+        .filter(Bet.race_id == race.id)
+        .filter(Bet.user_id == current_user.id)
+        .all()
     )
-    bonus = db.session.query(BonusGuess).filter(BonusGuess.race_id == race.id).first()
+    bonus = db.session.query(BonusQuestion).filter(BonusQuestion.race_id == race.id).first()
     locks = get_locks_race(race)
     start_times = {
-        "q_start": date_or_none(race.quali_start),
-        "s_start": date_or_none(race.sprint_start) if race.type == "SPRINT" else None,
-        "r_start": date_or_none(race.race_start),
+        "q_start": date_or_none(race.qualification_date),
+        "s_start": date_or_none(race.sprint_date) if race.sprint_date else None,
+        "r_start": date_or_none(race.race_date),
     }
     return render_template(
         "race.html",
         drivers=drivers,
-        guess=guess,
+        guess=create_bet(bets),
         locks=locks,
         race=race,
         race_type=race.type,
@@ -94,10 +94,24 @@ def race(short_name):
     )
 
 
-@main.route("/race/<string:short_name>", methods=["POST"])
+def create_bet(data):
+    types = ["first", "second", "third", "fastest_lap", "bonus", "quali", "sprint", "safety_car"]
+    out = {}
+    for item in data:
+        for type in types:
+            if item.type == type:
+                out[type] == item.value
+                break
+    return out
+
+    
+
+
+
+@main.route("/race/<string:external_circuit_id>", methods=["POST"])
 @login_required
-def race_post(short_name):
-    current_race_short_name = short_name
+def race_post(external_circuit_id):
+    current_race_short_name = external_circuit_id
     drivers = [driver.code for driver in db.session.query(Driver).all()]
 
     keys = [
@@ -116,20 +130,20 @@ def race_post(short_name):
 
     race = (
         db.session.query(Race)
-        .filter(Race.short_name == current_race_short_name)
+        .filter(Race.external_circuit_id == current_race_short_name)
         .first()
     )
     locks = get_locks_race(race)
 
-    guess = (
-        db.session.query(RaceGuess)
-        .filter(RaceGuess.race_id == race.id)
-        .filter(RaceGuess.user_id == current_user.id)
-        .first()
+    bets = (
+        db.session.query(Bet)
+        .filter(Bet.race_id == race.id)
+        .filter(Bet.user_id == current_user.id)
+        .all()
     )
 
-    bonus = db.session.query(BonusGuess).filter(BonusGuess.race_id == race.id).first()
-    if guess:
+    bonus = db.session.query(BonusQuestion).filter(BonusQuestion.race_id == race.id).first()
+    if bets:
         ### update
         for attr, value in form_data.items():
             if is_attr_locked(locks, attr):
@@ -138,9 +152,9 @@ def race_post(short_name):
         db.session.commit()
     else:
         ### create new guess
-        new_guess = RaceGuess(
+        new_guess = Bet(
             race_id=db.session.query(Race)
-            .filter(Race.short_name == current_race_short_name)
+            .filter(Race.external_circuit_id == current_race_short_name)
             .first()
             .id,
             user_id=current_user.id,
@@ -156,9 +170,9 @@ def race_post(short_name):
 
     flash("Tip v pořádku uložen")
     start_times = {
-        "q_start": date_or_none(race.quali_start),
-        "s_start": date_or_none(race.sprint_start) if race.type == "SPRINT" else None,
-        "r_start": date_or_none(race.race_start),
+        "q_start": date_or_none(race.qualification_date),
+        "s_start": date_or_none(race.sprint_date) if race.type == "SPRINT" else None,
+        "r_start": date_or_none(race.race_date),
     }
     return render_template(
         "race.html",
@@ -178,10 +192,10 @@ def races():
     def get_row(race):
         return {
             "name": race.name.replace("Grand Prix", "GP"),
-            "q": date_or_none(race.quali_start),
-            "s": date_or_none(race.sprint_start) if race.type == "SPRINT" else "-----",
-            "r": date_or_none(race.race_start),
-            "short_name": race.short_name,
+            "q": date_or_none(race.qualification_date),
+            "s": date_or_none(race.sprint_date) if race.type == "SPRINT" else "-----",
+            "r": date_or_none(race.race_date),
+            "short_name": race.external_circuit_id,
         }
 
     races = db.session.query(Race).all()
@@ -192,8 +206,8 @@ def races():
     upcoming = []
     switch = False
     rows = {}
-    for race in sorted(races, key=lambda x: x.race_start):
-        if race.short_name == currrent_race.short_name:
+    for race in sorted(races, key=lambda x: x.race_date):
+        if race.external_circuit_id == currrent_race.external_circuit_id:
             current.append(get_row(race))
             switch = True
             continue
@@ -213,6 +227,8 @@ def races():
 @main.route("/season", methods=["GET"])
 @login_required
 def season():
+    if os.getenv("WIP", True):
+        return render_template("wip.html")
     lock = False
     if os.getenv("SEASON_LOCK", ""):
         lock = True
@@ -231,8 +247,7 @@ def season():
         .first()
     )
 
-    if os.getenv("WIP", ""):
-        return render_template("wip.html")
+
     return render_template(
         "season.html",
         data=data,
@@ -311,9 +326,9 @@ def guess_overview():
     rows = []
     for user in sorted(users, key=lambda x: x.username):
         guess = (
-            db.session.query(RaceGuess)
-            .filter(RaceGuess.id == user.id)
-            .filter(RaceGuess.race_id == race.id)
+            db.session.query(Bet)
+            .filter(Bet.id == user.id)
+            .filter(Bet.race_id == race.id)
             .first()
         )
 
@@ -335,7 +350,7 @@ def guess_overview_race():
 
     data = []
 
-    for race in sorted(races, key=lambda x: x.race_start):
+    for race in sorted(races, key=lambda x: x.race_date):
         thead, rows = get_rows_race_overview(race, users, current_user_id)
         data.append({"thead": thead, "rows": rows})
     return render_template("guess_overview_race.html", data=data)
@@ -401,9 +416,9 @@ def get_rows_race_overview(race, users, current_user_id):
     for user in sorted(users, key=lambda x: x.username):
 
         guess = (
-            db.session.query(RaceGuess)
-            .filter(RaceGuess.user_id == user.id)
-            .filter(RaceGuess.race_id == race_id)
+            db.session.query(Bet)
+            .filter(Bet.user_id == user.id)
+            .filter(Bet.race_id == race_id)
             .first()
         )
 
@@ -461,9 +476,9 @@ def top_players():
                 .first()
             )
             guess = (
-                db.session.query(RaceGuess)
-                .filter(RaceGuess.user_id == user.id)
-                .filter(RaceGuess.race_id == race.id)
+                db.session.query(Bet)
+                .filter(Bet.user_id == user.id)
+                .filter(Bet.race_id == race.id)
                 .first()
             )
             if not result_for_race or not guess:
@@ -739,14 +754,14 @@ def evaluate_result(short_name):
     race = db.session.query(Race).filter(Race.short_name == short_name).first()
     race_id = race.id
     bonus_question = (
-        db.session.query(BonusGuess).filter(BonusGuess.race_id == race_id).first().text
+        db.session.query(BonusQuestion).filter(BonusQuestion.race_id == race_id).first().text
     )
     bonus_answer = (
         db.session.query(RaceResult).filter(RaceResult.race_id == race_id).first().bonus
     )
     bonus_table = [bonus_question, bonus_answer]
 
-    guesses = db.session.query(RaceGuess).filter(RaceGuess.race_id == race_id)
+    guesses = db.session.query(Bet).filter(Bet.race_id == race_id)
     thead = ["USERNAME", "BONUSGUESS"]
     rows = []
     for guess in guesses:
@@ -768,14 +783,14 @@ def evaluate_result_post(short_name):
     race = db.session.query(Race).filter(Race.short_name == short_name).first()
     race_id = race.id
     bonus_question = (
-        db.session.query(BonusGuess).filter(BonusGuess.race_id == race_id).first().text
+        db.session.query(BonusQuestion).filter(BonusQuestion.race_id == race_id).first().text
     )
     bonus_answer = (
         db.session.query(RaceResult).filter(RaceResult.race_id == race_id).first().bonus
     )
     bonus_table = [bonus_question, bonus_answer]
 
-    guesses = db.session.query(RaceGuess).filter(RaceGuess.race_id == race_id)
+    guesses = db.session.query(Bet).filter(Bet.race_id == race_id)
     thead = ["USERNAME", "BONUSGUESS"]
     rows = []
     for guess in guesses:
@@ -788,9 +803,9 @@ def evaluate_result_post(short_name):
     for user in users:
         bonus_ok = True if request.form.get(str(user.id), "") == "on" else False
         race_guess = (
-            db.session.query(RaceGuess)
-            .filter(RaceGuess.user_id == user.id)
-            .filter(RaceGuess.race_id == race_id)
+            db.session.query(Bet)
+            .filter(Bet.user_id == user.id)
+            .filter(Bet.race_id == race_id)
             .first()
         )
         if race_guess:
