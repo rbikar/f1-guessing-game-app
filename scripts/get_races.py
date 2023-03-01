@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import json
 
 
-API = "https://ergast.com/api/f1/2022"
+API = "https://ergast.com/api/f1/2023"
 import pytz
 from datetime import datetime
 

@@ -2,7 +2,7 @@ import requests
 import json
 
 
-API = "https://ergast.com/api/f1/2022"
+API = "https://ergast.com/api/f1/2023"
 
 
 # http://ergast.com/api/f1/2010/1/fastest/1/results  # fastest lap
