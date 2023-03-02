@@ -50,7 +50,11 @@ def signup_post():
         # code to validate and add user to database goes here
         username = request.form.get("username")
         password = request.form.get("password")
+        pin = request.form.get("pin")
 
+        if str(pin) != str(os.getenv("PIN", "CHANGE-ME")):
+            flash("Neplatný PIN")
+            return redirect(url_for("auth.signup"))
         user = User.query.filter_by(
             username=username
         ).first()  # if this returns a user, then the username already exists in database

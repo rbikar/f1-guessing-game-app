@@ -12,13 +12,13 @@
 </div>
 <div class="box"> {% with messages = get_flashed_messages() %} {% if messages %} <div class="notification is-success">
         {{ messages[0] }}
-    </div> {% endif %} {% endwith %} <form method="POST" action="/race/{{race.short_name}}" id="race"  onsubmit='return validateFormRace();'>
-        <fieldset {%if  locks.quali_start %} disabled {% endif %} style="margin: 15px; border: none; ">
+    </div> {% endif %} {% endwith %} <form method="POST" action="/race/{{race.external_circuit_id}}" id="race"  onsubmit='return validateFormRace();'>
+        <fieldset {%if  locks.qualification_date %} disabled {% endif %} style="margin: 15px; border: none; ">
             {{ build_driver_select("Vítěz kvalifikace", "quali", drivers, guess.quali) }}
-        </fieldset> {% if race_type == "SPRINT" %} <fieldset {%if  locks.sprint_start %} disabled {% endif %}
+        </fieldset> {% if race_type == "SPRINT" %} <fieldset {%if  locks.sprint_date %} disabled {% endif %}
             style="margin: 15px; border: none; ">
             {{ build_driver_select("Vítěz sprintu", "sprint", drivers, guess.sprint) }}
-        </fieldset> {% endif %} <fieldset {%if locks.race_start %} disabled {% endif %}
+        </fieldset> {% endif %} <fieldset {%if locks.race_date %} disabled {% endif %}
             style="margin: 15px; border: none; ">
             {{ build_driver_select("Vítěz závodu", "first", drivers, guess.first) }}
             {{ build_driver_select("Druhé místo", "second", drivers, guess.second) }}

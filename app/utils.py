@@ -6,14 +6,14 @@ import pytz
 def get_current_race(races):
     now = datetime.utcnow()
     utc = now.replace(tzinfo=pytz.utc)
-    # now = datetime(2022, 3, 15, 10, 00)
+    #now = datetime(2023, 12, 4, 18, 00)
     time = utc - timedelta(hours=6)
     candidates = []
     last = []
-    for race in sorted(races, key=lambda x: x.race_start, reverse=True):
-        if race.race_start.replace(tzinfo=pytz.utc) >= time:
+    for race in sorted(races, key=lambda x: x.race_date, reverse=True):
+        if race.race_date.replace(tzinfo=pytz.utc) >= time:
             candidates.append(race)
-        if race.round == "22":
+        if race.round == "23":
             last.append(race)
     if not candidates:
         candidates.extend(last)
@@ -32,10 +32,10 @@ def date_or_none(date):
 def get_locks_race(race):
     locks = {}
     now = datetime.utcnow()
-    # now = datetime(2022, 3, 15, 15, 1)
+    #now = datetime(2023, 3, 5, 15, 59)
     utc_now = now.replace(tzinfo=pytz.utc)
 
-    for attr in ["quali_start", "sprint_start", "race_start"]:
+    for attr in ["qualification_date", "sprint_date", "race_date"]:
         time = getattr(race, attr)
         if time and utc_now >= time.replace(tzinfo=pytz.utc):
             locks[attr] = True
@@ -46,9 +46,9 @@ def get_locks_race(race):
 
 
 lock_attr_map = {
-    "quali_start": ["quali"],
-    "sprint_start": ["sprint"],
-    "race_start": ["first", "second", "third", "fastest_lap", "safety_car", "bonus"],
+    "qualification_date": ["quali"],
+    "sprint_date": ["sprint"],
+    "race_date": ["first", "second", "third", "fastest_lap", "safety_car", "bonus"],
 }
 
 
