@@ -5,9 +5,9 @@
         {{race.name}}
     </h1>
     <h2 class="subtitle restorelines">
-        {{ build_lock("Kvalifikace", start_times.q_start,  locks.quali_start ) }} {% if start_times.s_start %}
-        {{ build_lock("Sprint", start_times.s_start,  locks.sprint_start ) }} {% endif %}
-        {{ build_lock("Závod", start_times.r_start,  locks.race_start ) }}
+        {{ build_lock("Kvalifikace", start_times.q_start,  locks.qualification_date ) }} {% if start_times.s_start %}
+        {{ build_lock("Sprint", start_times.s_start,  locks.sprint_date ) }} {% endif %}
+        {{ build_lock("Závod", start_times.r_start,  locks.race_date ) }}
     </h2>
 </div>
 <div class="box"> {% with messages = get_flashed_messages() %} {% if messages %} <div class="notification is-success">
