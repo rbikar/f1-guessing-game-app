@@ -135,9 +135,10 @@ def load_drivers_to_db():
                         return
                     # update
                     driver_obj.code = line
+                    driver_obj.season_active = True
                     db.session.commit()
                 else:
-                    new_driver = app.models.Driver(code=line)
+                    new_driver = app.models.Driver(code=line, season_active=True)
                     db.session.add(new_driver)
                     db.session.commit()
 

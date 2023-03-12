@@ -160,7 +160,14 @@ class Driver(db.Model):
     driver_id = db.Column(db.String(100))
     number = db.Column(db.String(100))
     code = db.Column(db.String(100), unique=True)
+    season_active = db.Column(db.Boolean)
 
+    def serialize(self):
+        return {
+            "driver_id": self.driver_id,
+            "number": self.number,
+            "code": self.code,
+        }
 
 class Constructor(db.Model):
     __tablename__ = "constructor"
@@ -173,6 +180,12 @@ class Constructor(db.Model):
     name = db.Column(db.String(100))
     code = db.Column(db.String(100), unique=True)
 
+    def serialize(self):
+        return {
+            "team_id": self.constructorId,
+            "name":  self.name,
+            "code": self.code,
+        }
 
 class BonusGuess(db.Model):
     __tablename__ = "bonusguess"
@@ -195,3 +208,43 @@ class Standings(db.Model):
     type = db.Column(db.String(100))
     name = db.Column(db.String(20), unique=True)
     points = db.Column(db.String(20))
+
+
+
+class SeasonBet(db.Model):
+    __tablename__ = "season_bet"
+
+    id = db.Column(db.Integer, primary_key=True)
+    # driver/team code
+    value = db.Column(db.String(50))
+    rank = db.Column(db.Integer) 
+    
+    type = db.Column(db.String(50)) # DRIVER, TEAM
+    # FKs  user_id, race_id
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+
+    @classmethod
+    def from_data(cls, data, type=None):
+        if type:
+            data["type"] = type
+
+        
+        if isinstance(data, list):
+            return [cls.from_data(elem) for elem in data]
+        
+        kwargs = {
+            "value": data["value"],
+            "rank": int(data["rank"]),
+            "type": type or data["type"],
+            "user_id": data["user_id"]
+        }
+        assert kwargs["type"] in ("TEAM", "DRIVER")
+        return cls(**kwargs)
+
+    @staticmethod
+    def serialize(bets):
+        out = {"TEAM": {}, "DRIVER": {}}
+        for item in bets:
+            out.setdefault(item.type, {})[item.rank] = item.value
+        
+        return out
