@@ -52,7 +52,7 @@ def signup_post():
         password = request.form.get("password")
         pin = request.form.get("pin")
 
-        if str(pin) != str(os.getenv("PIN", "1234")):
+        if str(pin) != str(os.getenv("PIN", "CHANGE-ME")):
             flash("Neplatný PIN")
             return redirect(url_for("auth.signup"))
         user = User.query.filter_by(
