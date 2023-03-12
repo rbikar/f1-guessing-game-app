@@ -36,7 +36,7 @@
               <select id="select_driver_{{ rank }}" name="select_driver_{{ rank }}" onclick="select_f(this, 'driver')">
 
 
-                <option value="" selected disabled hidden>---</option>
+                <option value="null" selected disabled hidden>---</option>
                 {% for item in data.drivers %}
                 <option value="{{item.code}}" id="DRIVER_{{rank}}">{{ item.code }}</option>
                 {% endfor %}
@@ -72,7 +72,7 @@
               <select id="select_team_{{ rank }}" name="select_team_{{ rank }}" onclick="select_f(this, 'team')">
 
 
-                <option value="" selected disabled hidden>---</option>
+                <option value="null" selected disabled hidden>---</option>
                 {% for item in data.teams %}
                 <option value="{{item.code}}" id="team_{{rank}}">{{ item.code }}</option>
                 {% endfor %}
@@ -112,8 +112,124 @@
 
 </form>
 <script>
+
+
+
+function set_select_onload(type, range){
+  bet = {{ data.bet | tojson | safe }}
+  //console.log(bet)
+  for (let i = 1; i < range; i++) {
+    select = document.getElementById('select_' + type +'_' + i);
+    //console.log(select.options)
+    let bet_val = ""
+    for (o of select.options) {
+      
+      if (type == 'driver') {
+        bet_val = bet.DRIVER[i]
+      }
+      else {
+        bet_val = bet.TEAM[i]
+      }
+      if (bet_val == o.value) {
+        o.selected = true
+      }
+    }
+  }
+//console.log(available)
+//console.log(selected)
+
+  for (const [key, item] of Object.entries(bet[type.toUpperCase()])){
+    if (item){
+        available[type].delete(item)
+        selected[type].add(item)
+    }
+  }
+
+  fix_options(type)
+  //console.log(available)
+  //console.log(selected)
+
+}
+
+function select_f(o, type) {  
+//console.log("SELECT")
+//console.log(o.value)
+//console.log(o.name)
+
+
+//console.log(data.drivers)
+//console.log(JSON.parse("{{ data.drivers | tojson }}"))
+//let drivers = Array.from(JSON.parse("{{ data.drivers | tojson }}"))
+
+//for (driver of data.drivers){
+// console.log(driver);
+//}
+
+// simulace selectu
+//console.log(available_drivers)
+//console.log(selected_drivers)
+
+let option = o.options[o.selectedIndex]
+if ( o.selectedIndex != 0 ){
+    available[type].delete(option.value)
+    selected[type].add(o.value)
+
+}
+
+//console.log(available)
+//console.log(selected)
+fix_options(type)
+
+
+};  
+
+function deselect(o, type) {
+
+  //console.log("DESELECT")
+  //console.log(o)
+  //console.log(type)
+  select = document.getElementById('select_' + type + '_' + o.id);  
+  //console.log(select)
+  let option = select.options[select.selectedIndex]
+
+  if ( select.selectedIndex != 0 ){
+        selected[type].delete(option.value)
+        available[type].add(option.value)
+      }
+
+
+  select.selectedIndex=0
+  
+  //console.log(available)
+  //console.log(selected)
+  fix_options(type)
+};
+
+function fix_options(type){
+  let range = type == 'driver' ? 21 : 11;
+ // console.log(range)
+  for (let i = 1; i < range; i++) {
+    select = document.getElementById('select_' + type + '_' + i);
+    //console.log(select.options)
+    for (o of select.options) {
+      //console.log(o.value)
+      if ( o.text != '---') {
+        if (available[type].has(o.value)) {
+        o.hidden = false;
+        //console.log("SHOWING " + o.value)
+        }
+        if (selected[type].has(o.value)){
+          o.hidden = true;
+          //console.log("HIDING " + o.value)
+        }
+      }
+    }
+  }
+}
+
+
   //const btn = document.querySelector('#btn');  
-  console.log({{data | tojson }})
+  ///console.log({{data | tojson }})
   //console.log({{ data.drivers | tojson }})
   let drivers = Array.from({{ data.drivers | tojson | safe }})
   let teams = Array.from({{ data.teams | tojson | safe }})
@@ -139,123 +255,10 @@
   }
   set_select_onload('driver', 21);
   set_select_onload('team', 11);
-  console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-  console.log(available)
-  console.log(selected)
-  console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-
-
-function set_select_onload(type, range){
-  bet = {{ data.bet | tojson | safe }}
-  console.log(bet)
-  for (let i = 1; i < range; i++) {
-    select = document.getElementById('select_' + type +'_' + i);
-    //console.log(select.options)
-    let bet_val = ""
-    for (o of select.options) {
-      
-      if (type == 'driver') {
-        bet_val = bet.DRIVER[i]
-      }
-      else {
-        bet_val = bet.TEAM[i]
-      }
-      if (bet_val == o.value) {
-        o.selected = true
-      }
-    }
-  }
-console.log(available)
-console.log(selected)
-
-  for (const [key, item] of Object.entries(bet[type.toUpperCase()])){
-    if (item){
-        available[type].delete(item)
-        selected[type].add(item)
-    }
-  }
-
-  fix_options(type)
-  console.log(available)
-  console.log(selected)
-
-}
-
-function select_f(o, type) {  
-console.log("SELECT")
-console.log(o.value)
-console.log(o.name)
-
-
-//console.log(data.drivers)
-//console.log(JSON.parse("{{ data.drivers | tojson }}"))
-//let drivers = Array.from(JSON.parse("{{ data.drivers | tojson }}"))
-
-//for (driver of data.drivers){
-// console.log(driver);
-//}
-
-// simulace selectu
-//console.log(available_drivers)
-//console.log(selected_drivers)
-
-let option = o.options[o.selectedIndex]
-if ( o.selectedIndex != 0 ){
-    available[type].delete(option.value)
-    selected[type].add(o.value)
-
-}
-
-console.log(available)
-console.log(selected)
-fix_options(type)
-
-
-};  
-
-function deselect(o, type) {
-
-  console.log("DESELECT")
-  console.log(o)
-  console.log(type)
-  select = document.getElementById('select_' + type + '_' + o.id);  
-  console.log(select)
-  let option = select.options[select.selectedIndex]
-
-  if ( select.selectedIndex != 0 ){
-        selected[type].delete(option.value)
-        available[type].add(option.value)
-      }
-
-
-  select.selectedIndex=0
-  
-  console.log(available)
-  console.log(selected)
-  fix_options(type)
-};
-
-function fix_options(type){
-  let range = type == 'driver' ? 21 : 11;
-  console.log(range)
-  for (let i = 1; i < range; i++) {
-    select = document.getElementById('select_' + type + '_' + i);
-    //console.log(select.options)
-    for (o of select.options) {
-      //console.log(o.value)
-      if ( o.text != '---') {
-        if (available[type].has(o.value)) {
-        o.hidden = false;
-        //console.log("SHOWING " + o.value)
-        }
-        if (selected[type].has(o.value)){
-          o.hidden = true;
-          //console.log("HIDING " + o.value)
-        }
-      }
-    }
-  }
-}
+  //console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+  //console.log(available)
+  //console.log(selected)
+  //console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
 </script>
 <script src="{{url_for('static', filename='validate_season.js')}}"></script>
 
