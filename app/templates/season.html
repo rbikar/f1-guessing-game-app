@@ -33,7 +33,8 @@
               <label id="label_select_driver_{{rank}}" for="select_driver_{{rank}}"></label>
               <div class="control">  
               <div class="select is-normal" default="">
-              <select id="select_driver_{{ rank }}" name="select_driver_{{ rank }}" onclick="select_f(this, 'driver')" onfocus="fix_options('driver')">
+              <select id="select_driver_{{ rank }}" name="select_driver_{{ rank }}" onchange="select_f(this, 'driver')"  onclick="select_f(this, 'driver')" onfocus="fix_options('driver')">
+
 
 
                 <option value="NOSELECT" selected disabled hidden>---</option>
@@ -69,7 +70,7 @@
               <label id="label_select_team_{{rank}}" for="select_team_{{rank}}"></label>
               <div class="control">  
               <div class="select is-normal" default="">
-              <select id="select_team_{{ rank }}" name="select_team_{{ rank }}" onclick="select_f(this, 'team')" onfocus="fix_options('team')">
+              <select id="select_team_{{ rank }}" name="select_team_{{ rank }}" onchange="select_f(this, 'team')" onclick="select_f(this, 'team')" onfocus="fix_options('team')">
 
 
                 <option value="NOSELECT" selected disabled hidden>---</option>
@@ -158,7 +159,7 @@ function set_select_onload(type, range){
 }
 
 function select_f(o, type) {  
-//console.log("SELECT")
+console.log("SELECT")
 //console.log(o.value)
 //console.log(o.name)
 
@@ -188,6 +189,7 @@ if ( o.selectedIndex != 0 ){
     available[type].delete(option.value)
     selected[type].add(option.value)
     o.dataset.prev = option.value
+    
     
 }
 //console.log(available[type])
