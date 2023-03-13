@@ -231,12 +231,16 @@ function fix_options(type){
     for (o of select.options) {
       //console.log(o.value)
       if ( o.text != '---') {
-        if (available[type].has(o.value) && o.hidden == true) {
+        if (available[type].has(o.value)) {
+
         o.hidden = false;
+        o.disabled = false;
         //console.log("SHOWING " + o.value)
         }
-        if (selected[type].has(o.value) && o.hidden == false){
+        if (selected[type].has(o.value)){
           o.hidden = true;
+          o.disabled = true;
+
           //console.log("HIDING " + o.value)
         }
       }
