@@ -16,6 +16,7 @@ from app.models import (
     SeasonGuess,
     Standings,
     User,
+    SeasonBet,
 )
 
 from .results import (
@@ -210,38 +211,83 @@ def races():
 
     return render_template("races.html", table_head=table_head, rows=rows)
 
+import json
 
-@main.route("/season", methods=["GET"])
+@main.route("/season", methods=["GET", "POST"])
 @login_required
 def season():
-    return render_template("wip.html")
-    lock = False
-    if os.getenv("SEASON_LOCK", ""):
-        lock = True
+    
+    locked = bool(os.getenv("SEASON_LOCK", ""))
+    
     data = {}
 
     drivers = [
-        driver.code for driver in db.session.query(Driver).all() if driver.code != "DRU"
+        driver.serialize() for driver in db.session.query(Driver).all() if driver.code != "DRU" # to change to driver.season_active
     ]
-    constructors = [constr.code for constr in db.session.query(Constructor).all()]
-    label_attrs_lists = get_label_attr_season()
-    data["drivers"] = label_attrs_lists[0]
-    data["constructors"] = label_attrs_lists[1]
-    season_guess = (
-        db.session.query(SeasonGuess)
-        .filter(SeasonGuess.user_id == current_user.id)
-        .first()
-    )
+    teams = [constr.serialize() for constr in db.session.query(Constructor).all()]
+    assert len(drivers) == 20
+    assert len(teams) == 10
 
-    if os.getenv("WIP", ""):
-        return render_template("wip.html")
+    bets_for_user = [bet for bet in (
+        db.session.query(SeasonBet)
+        .filter(SeasonBet.user_id == current_user.id)
+        .all()
+    )]
+
+    bets_in_dict = {}
+    for item in bets_for_user:
+        bets_in_dict.setdefault(item.type, {})[item.rank] = item
+
+    # show, update
+    if request.method == "POST":
+        commit_change = False
+        for type in ("DRIVER", "TEAM"):
+            for rank in range(1,21):
+                val = request.form.get(f"select_{type.lower()}_{rank}") or None
+
+                
+                bet_for_rank = bets_in_dict.get(type, {}).get(rank) or None
+                if val is None and bet_for_rank is None:
+                    # no bet from web form + nothing to update
+                    continue
+                
+                if bet_for_rank:
+                    # update
+                    bet_for_rank.value = val
+                    commit_change = True
+
+                else:
+                    # create new
+
+                    new_bet = SeasonBet.from_data(
+                        type=type,
+                        data={
+                        "value":val,
+                        "rank":rank,
+                    "user_id":current_user.id,
+                        }
+                    )
+                    db.session.add(new_bet)
+                    commit_change = True
+
+        if commit_change:
+            db.session.commit()
+            flash("Tip v pořádku uložen")
+
+        return redirect(url_for("main.season"))
+
+            
+
+    data = {
+        "bet": SeasonBet.serialize(bets_for_user),
+        "drivers": drivers,
+        "teams": teams,
+        "locked": locked,
+    }
+
     return render_template(
         "season.html",
         data=data,
-        guess=season_guess,
-        drivers=drivers,
-        constructors=constructors,
-        lock=lock,
     )
 
 
@@ -526,7 +572,32 @@ def top_players():
 @main.route("/guess_overview/season")
 @login_required
 def guess_overview_season():
-    return render_template("wip.html")
+    locked = bool(os.getenv("SEASON_LOCK", ""))
+
+    result = (
+        db.session.query(SeasonBet, User)
+        .join(User)
+        .all()
+    )
+   
+    data = {
+        "DRIVER": {},
+        "TEAM": {},
+    }
+
+    for type in ("DRIVER", "TEAM"):
+        for bet, user in result:
+            if bet.type == type:
+                if current_user.id != user.id and not locked:
+                    value = "LOCKED"
+                else:
+                    value = bet.value
+                data[type].setdefault(user.username, {})[bet.rank] = value
+
+    return render_template(
+        "guess_overview_season.html",
+        data=data
+    )
 
     users = db.session.query(User).all()
     stgds = db.session.query(Standings).all()

@@ -1,110 +1,91 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="box" id="big_table">
-    <h1 class="title">
-        Pohár jezdců
-    </h1>
-<table class="table is-bordered is-striped has-sticky-header  is-hoverable">
+<div class="box content is-medium otv">
 
-    <thead>
-        <tr>
-            {% for cell in thead_drivers %}
-            <th> {{cell}} </th>
+<table id="drivers">
 
-            {% endfor %}
 
-        </tr>
-    </thead>
-    <tbody>
-        {% for row in rows_drivers %}
-        <tr>
-            {% for cell in row %}
-            <td>
-            {% if cell == "N" %}
-            <ion-icon name="alert-circle"  id="noguess"></ion-icon>
-            {% else %}
-            {{cell}} 
-            
-            
-            {% endif %}
-        </td>
-            {% endfor %}
-        </tr>
-        {% endfor %}
-    </tbody>
 </table>
-</div>
+</div> 
 
-<div class="box" id="big_table">
-    <h1 class="title">
-        Pohár konstruktérů
-    </h1>
-    <table class="table is-bordered is-striped  is-hoverable">
-        <thead>
-            <tr>
-                {% for cell in thead_constr %}
-                <th> {{cell}} </th>
+<div class="box content is-medium otv">
+
+    <table id="teams">
     
-                {% endfor %}
     
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in rows_constr %}
-            <tr>
-                {% for cell in row %}
-                <td>
-                {% if cell == "N" %}
-                <ion-icon name="alert-circle" id="noguess"></ion-icon>
-                {% else %}
-                {{cell}} 
-                
-                
-                {% endif %}
-            </td>
-                {% endfor %}
-            </tr>
-            {% endfor %}
-        </tbody>
     </table>
-    </div>
+</div> 
 
-    <div class="box" id="big_table">
-        <h1 class="title">
-            Souboj v týmu
-        </h1>
-        <table class="table is-bordered is-striped  is-hoverable">
-            <thead>
-                <tr>
-                    {% for cell in thead_team %}
-                    <th> {{cell}} </th>
-        
-                    {% endfor %}
-        
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in rows_team %}
-                <tr>
-                    {% for cell in row %}
-                    <td>
-                    {% if cell == "N" %}
-                    <ion-icon name="alert-circle" id="noguess"></ion-icon>
-                    {% else %}
-                    {{cell}} 
-                    
-                    
-                    {% endif %}
-                </td>
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        </div>
 
-        
+<script>
+
+function generateTableHead(table, data, type) {
+  let thead = table.createTHead();
+  let row = thead.insertRow();
+  let th = document.createElement("th");
+    let text = document.createTextNode(type);
+    th.appendChild(text);
+    row.appendChild(th);
+  
+
+  for (let key of data) {
+    let th = document.createElement("th");
+    let text = document.createTextNode(key);
+    th.appendChild(text);
+    row.appendChild(th);
+  }
+}
+
+function generateTable(table, data, range) {
+
+   for (let i=1; i<range; i++){
+    let row = table.insertRow();
+    let cell = row.insertCell();
+    let text = document.createTextNode(i);
+    cell.appendChild(text);
+    for (const [key, item] of Object.entries(data)){
+        console.log(key)
+        console.log(item)
+        console.log(item[i]);
+        let cell = row.insertCell();
+        if (item[i] == "LOCKED"){
+            const icon = document.createElement("ion-icon")
+            icon.name = "lock-closed"
+            icon.id = "lock"
+            cell.appendChild(icon)
+        }//udelat jeste locked
+        else if (item[i]){
+            let text = document.createTextNode(item[i]);
+            cell.appendChild(text);
+        }
+        else
+        {
+            const icon = document.createElement("ion-icon")
+            icon.name = "alert-circle"
+            icon.id = "noguess"
+            cell.appendChild(icon)
+
+        }
+    }
+}
+  
+}
+
+drivers_data = {{ data.DRIVER | tojson | safe}}
+teamsdata = {{ data.TEAM | tojson | safe}}
+
+console.log(drivers_data)
+head_data = Object.keys(drivers_data);
+let table_drivers = document.querySelector("#drivers");
+generateTable(table_drivers, drivers_data, 21);
+generateTableHead(table_drivers, head_data, "JEZDCI");
+
+let table_teams = document.querySelector("#teams");
+generateTable(table_teams, teamsdata, 11);
+generateTableHead(table_teams, head_data, "KONSTRUKTÉŘI");
+
+</script>
 {% endblock %}
 
 

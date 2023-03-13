@@ -18,36 +18,93 @@
 {% from "driver_select.html" import build_driver_select, build_submit, build_cancel %}
 
 <form method="POST" id="season" onsubmit='return validateForm();' action="/season">
-  <fieldset style="margin: 15px; border: none; " {%if  lock %} disabled {% endif %}>
+  <fieldset style="margin: 15px; border: none; " {%if data.locked %} disabled {% endif %}>
     <div class="columns">
       <div class="column is-4">
         <div class="box">
           <div id="label" style="font-size: xx-large;">
             Jezdci
           </div>
-          {% for item in data.drivers %}
-          {{ build_driver_select(item.label, item.attr, drivers, guess[item.attr]) }}
-          {% endfor %}
-        </div>
+
+          {% for rank in range(1, 21) %}
+          <div class="field is-grouped">
+            <a class="button" id="rank" value=DRIVER_{{rank}}>{{rank}}</a>
+            <div>
+              <label id="label_select_driver_{{rank}}" for="select_driver_{{rank}}"></label>
+              <div class="control">  
+              <div class="select is-normal" default="">
+              <select id="select_driver_{{ rank }}" name="select_driver_{{ rank }}" onchange="select_f(this, 'driver')"  onclick="select_f(this, 'driver')" onfocus="fix_options('driver')">
+
+
+
+                <option value="NOSELECT" selected disabled hidden>---</option>
+                {% for item in data.drivers %}
+                <option value="{{item.code}}" id="DRIVER_{{rank}}">{{ item.code }}</option>
+                {% endfor %}
+
+              </select>
+              </div>
+            </div>
+            </div>
+            <button class="button"  type="button" onclick="deselect(this, 'driver')" onfocus="fix_options('driver')" id={{rank}} value="X">
+              <ion-icon name="close-outline"  size="large"></ion-icon>
+            </button>
+
+          </div>
+
+          {% endfor %}  
+
       </div>
+      </div>
+
       <div class="column  is-4">
         <div class="box">
           <div id="label" style="font-size: xx-large;">
             Konstruktéři
           </div>
 
-          {% for item in data.constructors %}
-          {{ build_driver_select(item.label, item.attr, constructors, guess[item.attr]) }}
-          {% endfor %}
+          {% for rank in range(1, 11) %}
+          <div class="field is-grouped">
+            <a class="button" id="rank" value=TEAM_{{rank}}>{{rank}}</a>
+            <div>
+              <label id="label_select_team_{{rank}}" for="select_team_{{rank}}"></label>
+              <div class="control">  
+              <div class="select is-normal" default="">
+              <select id="select_team_{{ rank }}" name="select_team_{{ rank }}" onchange="select_f(this, 'team')" onclick="select_f(this, 'team')" onfocus="fix_options('team')">
+
+
+                <option value="NOSELECT" selected disabled hidden>---</option>
+                {% for item in data.teams %}
+                <option value="{{item.code}}" id="team_{{rank}}">{{ item.code }}</option>
+                {% endfor %}
+
+              </select>
+              </div>
+            </div>
+            </div>
+            <button class="button"  type="button" onclick="deselect(this, 'team')" id={{rank}} value="X" onfocus="fix_options('team')">
+              <ion-icon name="close-outline"  size="large"></ion-icon>
+            </button>
+
+          </div>
+
+          {% endfor %}  
+
+
+
+
+
+
         </div>
       </div>
+
+
   </fieldset>
   <div class="box">
-    <fieldset style="margin: 15px; border: none; " {%if  lock %} disabled {% endif %}>
+    <fieldset style="margin: 15px; border: none; " {%if data.locked %} disabled {% endif %}>
       {{ build_submit("Uložit") }}
       {{ build_cancel("Storno") }}
     </fieldset>
-  </div>
   </div>
 
   </div>
@@ -55,6 +112,182 @@
 
 
 </form>
+<script>
+
+
+
+function set_select_onload(type, range){
+//  console.log(available[type])//
+//console.log(selected[type])
+  bet = {{ data.bet | tojson | safe }}
+  //console.log(bet)
+  for (let i = 1; i < range; i++) {
+    select = document.getElementById('select_' + type +'_' + i);
+    //console.log(select.options)
+    let bet_val = ""
+    for (o of select.options) {
+      
+      if (type == 'driver') {
+        bet_val = bet.DRIVER[i]
+      }
+      else {
+        bet_val = bet.TEAM[i]
+      }
+      if (bet_val == o.value) {
+      //  console.log("SETTING SELECTED")
+      //  console.log(o.value)
+        select.dataset.prev = bet_val
+        //o.selected = true
+        select.value = bet_val
+      }
+    }
+  }
+//console.log(available)
+//console.log(selected)
+
+  for (const [key, item] of Object.entries(bet[type.toUpperCase()])){
+    if (item){
+        available[type].delete(item)
+        selected[type].add(item)
+    }
+  }
+
+  fix_options(type)
+  //console.log(available)
+  //console.log(selected)
+
+}
+
+function select_f(o, type) {  
+console.log("SELECT")
+//console.log(o.value)
+//console.log(o.name)
+
+
+//console.log(data.drivers)
+//console.log(JSON.parse("{{ data.drivers | tojson }}"))
+//let drivers = Array.from(JSON.parse("{{ data.drivers | tojson }}"))
+
+//for (driver of data.drivers){
+// console.log(driver);
+//}
+
+// simulace selectu
+//console.log("START")
+//console.log(available[type])
+//console.log(selected[type])
+
+let option = o.options[o.selectedIndex]
+
+
+if ( o.selectedIndex != 0 ){
+    if (o.dataset.prev){
+      available[type].add(o.dataset.prev)
+      selected[type].delete(o.dataset.prev)
+
+    }
+    available[type].delete(option.value)
+    selected[type].add(option.value)
+    o.dataset.prev = option.value
+    
+    
+}
+//console.log(available[type])
+//console.log(selected[type])
+//console.log("FINISH")
+
+
+fix_options(type)
+
+};  
+
+function deselect(o, type) {
+
+  //console.log("DESELECT")
+  //console.log(o)
+  //console.log(type)
+
+  select = document.getElementById('select_' + type + '_' + o.id);  
+  //console.log(select)
+  let option = select.options[select.selectedIndex]
+
+  if ( select.selectedIndex != 0 ){
+        selected[type].delete(option.value)
+        available[type].add(option.value)
+      }
+
+
+  select.selectedIndex=0
+
+  //console.log(available)
+  //console.log(selected)
+  fix_options(type)
+};
+
+function fix_options(type){
+  //console.log("FIXING")
+  let range = type == 'driver' ? 21 : 11;
+ // console.log(range)
+  for (let i = 1; i < range; i++) {
+    select = document.getElementById('select_' + type + '_' + i);
+    //console.log(select.options)
+    for (o of select.options) {
+      //console.log(o.value)
+      if ( o.text != '---') {
+        if (available[type].has(o.value)) {
+
+        o.hidden = false;
+        o.style.visibility="visible";
+       // o.disabled = false;
+
+        //console.log("SHOWING " + o.value)
+        }
+        if (selected[type].has(o.value)){
+          o.hidden = true;
+          o.style.visibility="hidden";
+
+         // o.disabled = true;
+
+          //console.log("HIDING " + o.value)
+        }
+      }
+    }
+  }
+}
+
+
+  //const btn = document.querySelector('#btn');  
+  ///console.log({{data | tojson }})
+  //console.log({{ data.drivers | tojson }})
+  let drivers = Array.from({{ data.drivers | tojson | safe }})
+  let teams = Array.from({{ data.teams | tojson | safe }})
+
+  let available_drivers = new Set([])
+  for (let d of drivers) {
+    available_drivers.add(d.code)
+  }
+  let available_teams = new Set([])
+  for (let t of teams) {
+    available_teams.add(t.code)
+  }
+  let selected_drivers = new Set([])
+  let selected_teams = new Set([])
+  
+  let available = {
+    "driver": available_drivers,
+    "team": available_teams,
+  }
+  let selected = {
+    "driver": selected_drivers,
+    "team": selected_teams,
+  }
+  set_select_onload('driver', 21);
+  set_select_onload('team', 11);
+  //console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+  //console.log(available)
+  //console.log(selected)
+  //console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+</script>
 <script src="{{url_for('static', filename='validate_season.js')}}"></script>
 
 {% endblock %}
