@@ -33,7 +33,7 @@
               <label id="label_select_driver_{{rank}}" for="select_driver_{{rank}}"></label>
               <div class="control">  
               <div class="select is-normal" default="">
-              <select id="select_driver_{{ rank }}" name="select_driver_{{ rank }}" onclick="select_f(this, 'driver')">
+              <select id="select_driver_{{ rank }}" name="select_driver_{{ rank }}" onclick="select_f(this, 'driver')" onfocus="fix_options('driver')">
 
 
                 <option value="NOSELECT" selected disabled hidden>---</option>
@@ -45,7 +45,7 @@
               </div>
             </div>
             </div>
-            <button class="button"  type="button" onclick="deselect(this, 'driver')" id={{rank}} value="X">
+            <button class="button"  type="button" onclick="deselect(this, 'driver')" onfocus="fix_options('driver')" id={{rank}} value="X">
               <ion-icon name="close-outline"  size="large"></ion-icon>
             </button>
 
@@ -69,7 +69,7 @@
               <label id="label_select_team_{{rank}}" for="select_team_{{rank}}"></label>
               <div class="control">  
               <div class="select is-normal" default="">
-              <select id="select_team_{{ rank }}" name="select_team_{{ rank }}" onclick="select_f(this, 'team')">
+              <select id="select_team_{{ rank }}" name="select_team_{{ rank }}" onclick="select_f(this, 'team')" onfocus="fix_options('team')">
 
 
                 <option value="NOSELECT" selected disabled hidden>---</option>
@@ -81,7 +81,7 @@
               </div>
             </div>
             </div>
-            <button class="button"  type="button" onclick="deselect(this, 'team')" id={{rank}} value="X">
+            <button class="button"  type="button" onclick="deselect(this, 'team')" id={{rank}} value="X" onfocus="fix_options('team')">
               <ion-icon name="close-outline"  size="large"></ion-icon>
             </button>
 
@@ -223,6 +223,7 @@ function deselect(o, type) {
 };
 
 function fix_options(type){
+  //console.log("FIXING")
   let range = type == 'driver' ? 21 : 11;
  // console.log(range)
   for (let i = 1; i < range; i++) {
