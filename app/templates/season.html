@@ -36,6 +36,7 @@
               <select id="select_driver_{{ rank }}" name="select_driver_{{ rank }}" onchange="select_f(this, 'driver')"  onclick="select_f(this, 'driver')" onfocus="fix_options('driver')">
 
 
+
                 <option value="NOSELECT" selected disabled hidden>---</option>
                 {% for item in data.drivers %}
                 <option value="{{item.code}}" id="DRIVER_{{rank}}">{{ item.code }}</option>
