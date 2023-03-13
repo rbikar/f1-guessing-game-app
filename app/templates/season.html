@@ -234,12 +234,16 @@ function fix_options(type){
         if (available[type].has(o.value)) {
 
         o.hidden = false;
-        o.disabled = false;
+        o.style.visibility="visible";
+       // o.disabled = false;
+
         //console.log("SHOWING " + o.value)
         }
         if (selected[type].has(o.value)){
           o.hidden = true;
-          o.disabled = true;
+          o.style.visibility="hidden";
+
+         // o.disabled = true;
 
           //console.log("HIDING " + o.value)
         }
