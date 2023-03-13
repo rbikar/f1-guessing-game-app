@@ -272,6 +272,8 @@ def season():
 
         if commit_change:
             db.session.commit()
+            flash("Tip v pořádku uložen")
+
         return redirect(url_for("main.season"))
 
             
