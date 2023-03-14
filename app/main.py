@@ -68,7 +68,11 @@ def race_current():
 @login_required
 def race(external_circuit_id):
     drivers = [driver.code for driver in db.session.query(Driver).all()]
-    race = db.session.query(Race).filter(Race.external_circuit_id == external_circuit_id).first()
+    race = (
+        db.session.query(Race)
+        .filter(Race.external_circuit_id == external_circuit_id)
+        .first()
+    )
 
     guess = (
         db.session.query(RaceGuess)
@@ -80,7 +84,7 @@ def race(external_circuit_id):
     locks = get_locks_race(race)
     start_times = {
         "q_start": date_or_none(race.qualification_date),
-        "s_start": date_or_none(race.sprint_date) if race.sprint_date  else None,
+        "s_start": date_or_none(race.sprint_date) if race.sprint_date else None,
         "r_start": date_or_none(race.race_date),
     }
     return render_template(
@@ -89,7 +93,7 @@ def race(external_circuit_id):
         guess=guess,
         locks=locks,
         race=race,
-        race_type="SPRINT" if race.sprint_date  else "NORMAL",
+        race_type="SPRINT" if race.sprint_date else "NORMAL",
         start_times=start_times,
         bonus=bonus,
     )
@@ -158,7 +162,9 @@ def race_post(external_circuit_id):
     flash("Tip v pořádku uložen")
     start_times = {
         "q_start": date_or_none(race.qualification_date),
-        "s_start": date_or_none(race.sprint_date) if race.sprint_date == "SPRINT" else None,
+        "s_start": date_or_none(race.sprint_date)
+        if race.sprint_date == "SPRINT"
+        else None,
         "r_start": date_or_none(race.race_date),
     }
     return render_template(
@@ -176,14 +182,13 @@ def race_post(external_circuit_id):
 @main.route("/races", methods=["GET"])
 @login_required
 def races():
-    return render_template("wip.html")
     def get_row(race):
         return {
             "name": race.name.replace("Grand Prix", "GP"),
             "q": date_or_none(race.qualification_date),
-            "s": date_or_none(race.sprint_date) if race.type == "SPRINT" else "-----",
+            "s": date_or_none(race.sprint_date) if race.sprint_date else "-----",
             "r": date_or_none(race.race_date),
-            "short_name": race.external_circuit_id,
+            "external_circuit_id": race.external_circuit_id,
         }
 
     races = db.session.query(Race).all()
@@ -211,28 +216,34 @@ def races():
 
     return render_template("races.html", table_head=table_head, rows=rows)
 
+
 import json
+
 
 @main.route("/season", methods=["GET", "POST"])
 @login_required
 def season():
-    
     locked = bool(os.getenv("SEASON_LOCK", ""))
-    
+
     data = {}
 
     drivers = [
-        driver.serialize() for driver in db.session.query(Driver).all() if driver.code != "DRU" # to change to driver.season_active
+        driver.serialize()
+        for driver in db.session.query(Driver).all()
+        if driver.code != "DRU"  # to change to driver.season_active
     ]
     teams = [constr.serialize() for constr in db.session.query(Constructor).all()]
     assert len(drivers) == 20
     assert len(teams) == 10
 
-    bets_for_user = [bet for bet in (
-        db.session.query(SeasonBet)
-        .filter(SeasonBet.user_id == current_user.id)
-        .all()
-    )]
+    bets_for_user = [
+        bet
+        for bet in (
+            db.session.query(SeasonBet)
+            .filter(SeasonBet.user_id == current_user.id)
+            .all()
+        )
+    ]
 
     bets_in_dict = {}
     for item in bets_for_user:
@@ -242,15 +253,14 @@ def season():
     if request.method == "POST":
         commit_change = False
         for type in ("DRIVER", "TEAM"):
-            for rank in range(1,21):
+            for rank in range(1, 21):
                 val = request.form.get(f"select_{type.lower()}_{rank}") or None
 
-                
                 bet_for_rank = bets_in_dict.get(type, {}).get(rank) or None
                 if val is None and bet_for_rank is None:
                     # no bet from web form + nothing to update
                     continue
-                
+
                 if bet_for_rank:
                     # update
                     bet_for_rank.value = val
@@ -262,10 +272,10 @@ def season():
                     new_bet = SeasonBet.from_data(
                         type=type,
                         data={
-                        "value":val,
-                        "rank":rank,
-                    "user_id":current_user.id,
-                        }
+                            "value": val,
+                            "rank": rank,
+                            "user_id": current_user.id,
+                        },
                     )
                     db.session.add(new_bet)
                     commit_change = True
@@ -275,8 +285,6 @@ def season():
             flash("Tip v pořádku uložen")
 
         return redirect(url_for("main.season"))
-
-            
 
     data = {
         "bet": SeasonBet.serialize(bets_for_user),
@@ -449,7 +457,6 @@ def get_rows_race_overview(race, users, current_user_id):
     locks = get_locks_race(race)
 
     for user in sorted(users, key=lambda x: x.username):
-
         guess = (
             db.session.query(RaceGuess)
             .filter(RaceGuess.user_id == user.id)
@@ -574,12 +581,8 @@ def top_players():
 def guess_overview_season():
     locked = bool(os.getenv("SEASON_LOCK", ""))
 
-    result = (
-        db.session.query(SeasonBet, User)
-        .join(User)
-        .all()
-    )
-   
+    result = db.session.query(SeasonBet, User).join(User).all()
+
     data = {
         "DRIVER": {},
         "TEAM": {},
@@ -594,10 +597,7 @@ def guess_overview_season():
                     value = bet.value
                 data[type].setdefault(user.username, {})[bet.rank] = value
 
-    return render_template(
-        "guess_overview_season.html",
-        data=data
-    )
+    return render_template("guess_overview_season.html", data=data)
 
     users = db.session.query(User).all()
     stgds = db.session.query(Standings).all()
@@ -733,7 +733,6 @@ def get_team_match_stdg_result(season_results, team):
 def team_match_row(team, users, season_results):
     row = []
     for user in users:  # user are sorted
-
         result_for_user = (
             season_results[user.username]["data"]["team_match"].get(team) or None
         )
@@ -808,13 +807,17 @@ def rules():
 #### admin only / TODO move to different router
 
 
-@main.route("/result/<string:short_name>/evaluate", methods=["GET"])
+@main.route("/result/<string:external_circuit_id>/evaluate", methods=["GET"])
 @login_required
-def evaluate_result(short_name):
+def evaluate_result(external_circuit_id):
     if current_user.role != "ADMIN":
         raise Exception
 
-    race = db.session.query(Race).filter(Race.short_name == short_name).first()
+    race = (
+        db.session.query(Race)
+        .filter(Race.external_circuit_id == external_circuit_id)
+        .first()
+    )
     race_id = race.id
     bonus_question = (
         db.session.query(BonusGuess).filter(BonusGuess.race_id == race_id).first().text
@@ -838,12 +841,16 @@ def evaluate_result(short_name):
     )
 
 
-@main.route("/result/<string:short_name>/evaluate", methods=["POST"])
+@main.route("/result/<string:external_circuit_id>/evaluate", methods=["POST"])
 @login_required
-def evaluate_result_post(short_name):
+def evaluate_result_post(external_circuit_id):
     if current_user.role != "ADMIN":
         raise Exception
-    race = db.session.query(Race).filter(Race.short_name == short_name).first()
+    race = (
+        db.session.query(Race)
+        .filter(Race.external_circuit_id == external_circuit_id)
+        .first()
+    )
     race_id = race.id
     bonus_question = (
         db.session.query(BonusGuess).filter(BonusGuess.race_id == race_id).first().text
@@ -880,30 +887,39 @@ def evaluate_result_post(short_name):
     )
 
 
-@main.route("/result/<string:short_name>", methods=["GET"])
+@main.route("/result/<string:external_circuit_id>", methods=["GET"])
 @login_required
-def load_results(short_name):
+def load_results(external_circuit_id):
     if current_user.role != "ADMIN":
         raise Exception
 
-    race = db.session.query(Race).filter(Race.short_name == short_name).first()
+    race = (
+        db.session.query(Race)
+        .filter(Race.external_circuit_id == external_circuit_id)
+        .first()
+    )
 
     result = db.session.query(RaceResult).filter(RaceResult.race_id == race.id).first()
     loaded = False
     if result:
         loaded = True
         flash("ALREADY LOADED")
-
+    else:
+        flash(f"RESULT FOR {external_circuit_id} NOT LOADED!")
     return render_template("result.html", race=race, loaded=loaded)
 
 
-@main.route("/result/<string:short_name>", methods=["POST"])
+@main.route("/result/<string:external_circuit_id>", methods=["POST"])
 @login_required
-def load_results_post(short_name):
+def load_results_post(external_circuit_id):
     if current_user.role != "ADMIN":
         raise Exception
 
-    race = db.session.query(Race).filter(Race.short_name == short_name).first()
+    race = (
+        db.session.query(Race)
+        .filter(Race.external_circuit_id == external_circuit_id)
+        .first()
+    )
 
     result = db.session.query(RaceResult).filter(RaceResult.race_id == race.id).first()
     loaded = False
@@ -912,7 +928,7 @@ def load_results_post(short_name):
         flash("ALREADY LOADED")
     else:
         result_data = get_result_for_round(
-            race.round, True if race.type == "SPRINT" else False
+            race.round, True if race.sprint_date == "SPRINT" else False
         )
 
         safety_car_result = request.form.get("safety_car")
@@ -955,7 +971,7 @@ def results_table(message=None):
     def get_row(race):
         return {
             "name": race.name.replace("Grand Prix", "GP"),
-            "short_name": race.short_name,
+            "short_name": race.external_circuit_id,
         }
 
     rows = []

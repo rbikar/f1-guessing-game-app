@@ -25,7 +25,6 @@ class Client(object):
             .with_retry()
         )
 
-
     def __enter__(self):
         return self
 
@@ -50,13 +49,47 @@ class Client(object):
 
     def _do_request(self, **kwargs):
         # due to ergast API limitations we need to wait between requests in order not to exceed limits
-        LOG.debug("Waiting %s seconds before making request", SLEEP_SECONDS)    
+        LOG.debug("Waiting %s seconds before making request", SLEEP_SECONDS)
         sleep(SLEEP_SECONDS)
         return self._session.request(**kwargs)
 
     def get_current_schedule(self):
-        #https://ergast.com/api/f1/2023.json
+        # https://ergast.com/api/f1/2023.json
         endpoint = "2023"
         url = os.path.join(self._url, endpoint + ".json")
         LOG.debug("Getting all races for season %s", endpoint)
+        return self._executor.submit(self._do_request, method="GET", url=url)
+
+    def get_result(self, round, rank):
+        endpoint = f"2023/{round}/results/{rank}.json"
+        url = os.path.join(self._url, endpoint)
+        LOG.debug("Getting result for race, round %s: %s", round, endpoint)
+
+        return self._executor.submit(self._do_request, method="GET", url=url)
+
+    def get_q_result(self, round, rank):
+        endpoint = f"2023/{round}/qualifying/{rank}.json"
+        url = os.path.join(self._url, endpoint)
+        LOG.debug("Getting result for Q, rank: %s, round %s: %s", round, rank, endpoint)
+        return self._executor.submit(self._do_request, method="GET", url=url)
+
+    def get_sprint_result(self, round, rank):
+        endpoint = f"2023/{round}/sprint/{rank}.json"
+        url = os.path.join(self._url, endpoint)
+        LOG.debug(
+            "Getting result for sprint, rank: %s, round %s: %s", round, rank, endpoint
+        )
+
+        return self._executor.submit(self._do_request, method="GET", url=url)
+
+    def get_fastest_lap(self, round, rank):
+        endpoint = f"2023/{round}/fastest/{rank}/results.json"
+        url = os.path.join(self._url, endpoint)
+        LOG.debug(
+            "Getting result of fastest lap, rank: %s, round %s: %s",
+            round,
+            rank,
+            endpoint,
+        )
+
         return self._executor.submit(self._do_request, method="GET", url=url)
