@@ -1,65 +1,52 @@
 from time import sleep
-
+from .ergast_client.client import Client
 import requests
 
-API = "https://ergast.com/api/f1/2023"
+API = ""
 
 
-def get_result(round, rank):
-    url = f"{API}/{round}/results/{rank}.json"
-    response = requests.get(url)
-
-    data = response.json()
-    result = data["MRData"]["RaceTable"]["Races"][0]["Results"][0]["Driver"]["code"]
-    return result
+def get_result(client, round, rank):
+    data = client.get_result(round, rank).result()
+    return data["MRData"]["RaceTable"]["Races"][0]["Results"][0]["Driver"]["code"]
 
 
-def get_q_result(round):
+def get_q_result(client, round):
     rank = 1
-    url = f"{API}/{round}/qualifying/{rank}.json"
-    response = requests.get(url)
-    data = response.json()
-    result = data["MRData"]["RaceTable"]["Races"][0]["QualifyingResults"][0]["Driver"][
+    data = client.get_q_result(round, rank).result()
+    return data["MRData"]["RaceTable"]["Races"][0]["QualifyingResults"][0]["Driver"][
         "code"
     ]
-    return result
 
 
-def get_sprint_result(round):
+def get_sprint_result(client, round):
     rank = 1
-    url = f"{API}/{round}/sprint/{rank}.json"
-    response = requests.get(url)
-    data = response.json()
-    result = data["MRData"]["RaceTable"]["Races"][0]["SprintResults"][0]["Driver"][
-        "code"
-    ]
-    return result
+    data = client.get_sprint_result(round, rank).result()
+    return data["MRData"]["RaceTable"]["Races"][0]["SprintResults"][0]["Driver"]["code"]
 
 
-def get_fastest_lap(round):
+def get_fastest_lap(client, round):
     rank = 1
-    url = f"{API}/{round}/fastest/{rank}/results.json"
-    response = requests.get(url)
-    data = response.json()
-    result = data["MRData"]["RaceTable"]["Races"][0]["Results"][0]["Driver"]["code"]
-    return result
+    data = client.get_fastest_lap(round, rank).result()
+
+    return data["MRData"]["RaceTable"]["Races"][0]["Results"][0]["Driver"]["code"]
 
 
 def get_result_for_round(round, is_sprint=False):
-    quali = get_q_result(round)
-    sleep(0.5)
-    sprint = None
-    if is_sprint:
-        sprint = get_sprint_result(round)
-    sleep(0.5)
-    fastest_lap = get_fastest_lap(round)
-    sleep(0.5)
-
-    podium = []
-
-    for rank in [1, 2, 3]:
-        podium.append(get_result(round, rank))
+    with Client("https://ergast.com") as client:
+        quali = get_q_result(client, round)
         sleep(0.5)
+        sprint = None
+        if is_sprint:
+            sprint = get_sprint_result(client, round)
+        sleep(0.5)
+        fastest_lap = get_fastest_lap(client, round)
+        sleep(0.5)
+
+        podium = []
+
+        for rank in [1, 2, 3]:
+            podium.append(get_result(client, round, rank))
+            sleep(0.5)
 
     return {
         "quali": quali,
@@ -275,7 +262,7 @@ def season_result(bet, results_map, std_type=None):
         points = 0
         attr = f"_{pos}{cfg['type']}"
         if bet is None:
-            bet_on_position="N/S"
+            bet_on_position = "N/S"
         else:
             bet_on_position = getattr(bet, attr)
 
