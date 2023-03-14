@@ -80,7 +80,7 @@
 {% macro build_row(race, selected) %}
 
 <tr {% if selected %} class=is-selected {% endif %}>
-    <th><a href="{{ url_for('main.race', short_name=race.short_name) }}">{{race.name}}</td>
+    <th><a href="{{ url_for('main.race', external_circuit_id=race.external_circuit_id) }}">{{race.name}}</td>
     <td> {{race.q}} </td>
     <td> {{race.s}} </td>
     <td> {{race.r}} </td>
@@ -115,7 +115,7 @@
 {% macro build_row_result(race, selected) %}
 
 <tr {% if selected %} class=is-selected {% endif %}>
-    <th><a href="{{ url_for('main.load_results', short_name=race.short_name) }}">{{race.name}}</td>
+    <th><a href="{{ url_for('main.load_results', short_name=race.external_race_id) }}">{{race.name}}</td>
 </tr>
 
 {% endmacro %}
