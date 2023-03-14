@@ -216,6 +216,7 @@ def races():
 
     return render_template("races.html", table_head=table_head, rows=rows)
 
+import json
 
 import json
 
@@ -583,6 +584,7 @@ def guess_overview_season():
 
     result = db.session.query(SeasonBet, User).join(User).all()
 
+
     data = {
         "DRIVER": {},
         "TEAM": {},
@@ -598,6 +600,7 @@ def guess_overview_season():
                 data[type].setdefault(user.username, {})[bet.rank] = value
 
     return render_template("guess_overview_season.html", data=data)
+
 
     users = db.session.query(User).all()
     stgds = db.session.query(Standings).all()
