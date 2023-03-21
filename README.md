@@ -11,7 +11,6 @@ since flask2.3 use FLASK_DEBUG instead FLASK_ENV
 
 For DB init:
 
-
 `python init_db.py`
 
 Run dev. server
@@ -40,4 +39,3 @@ everytime use
 
 `flask db migrage -m "some message"`
 `flask db upgrade`
-

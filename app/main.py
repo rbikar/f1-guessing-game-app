@@ -1,5 +1,5 @@
 import os
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from time import sleep
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
@@ -13,10 +13,10 @@ from app.models import (
     Race,
     RaceGuess,
     RaceResult,
+    SeasonBet,
     SeasonGuess,
     Standings,
     User,
-    SeasonBet,
 )
 
 from .results import (
@@ -216,7 +216,6 @@ def races():
 
     return render_template("races.html", table_head=table_head, rows=rows)
 
-import json
 
 import json
 
@@ -496,84 +495,35 @@ def get_rows_race_overview(race, users, current_user_id):
     return thead, rows
 
 
+
+
 @main.route("/top_players")
 @login_required
 def top_players():
-    return render_template("wip.html")
-    users = db.session.query(User).all()
-    races = db.session.query(Race).all()
-    thead = ["Pořadí", "Hráč", "Body"]
+    out = []
+    bet_user = db.session.query(RaceGuess, User).join(User).all()
+    race_result_map = {
+        race.id: result
+        for race, result in db.session.query(Race, RaceResult).join(RaceResult).all()
+    }
 
-    rows = []
-    sums_for_users = []
-    sums_season = []
-    sums_total = []
+    sums_for_users = defaultdict(float)  # map user: points
+    for bet, user in bet_user:
+        race_result = race_result_map.get(bet.race_id) or None
+        if race_result and bet:
+            _, points = evaluate_result_for_user(race_result, bet)
+            sums_for_users[user.username] += points
 
-    season_result = compute_season_result(users)
-
-    for user in users:
-        sum_for_user = 0.0
-        for race in races:
-            result_for_race = (
-                db.session.query(RaceResult)
-                .filter(RaceResult.race_id == race.id)
-                .first()
-            )
-            guess = (
-                db.session.query(RaceGuess)
-                .filter(RaceGuess.user_id == user.id)
-                .filter(RaceGuess.race_id == race.id)
-                .first()
-            )
-            if not result_for_race or not guess:
-                points_sum = 0.0
-            else:
-                _, points_sum = evaluate_result_for_user(result_for_race, guess)
-            sum_for_user += points_sum
-
-        sums_for_users.append(
-            (
-                user.username,
-                sum_for_user,
-            )
-        )
-
-        sums_season.append((user.username, season_result[user.username]["total"]))
-
-        sums_total.append(
-            (user.username, sum_for_user + float(season_result[user.username]["total"]))
-        )
-
-    for order, result in zip(
-        range(1, len(users) + 1),
-        sorted(sums_for_users, key=lambda x: x[1], reverse=True),
-    ):
-        row = [f"{order}.", result[0], result[1]]
-        rows.append(row)
-
-    rows_season = []
-    for order, result in zip(
-        range(1, len(users) + 1),
-        sorted(sums_season, key=lambda x: x[1], reverse=True),
-    ):
-        row = [f"{order}.", result[0], result[1]]
-        rows_season.append(row)
-
-    rows_total = []
-    for order, result in zip(
-        range(1, len(users) + 1),
-        sorted(sums_total, key=lambda x: x[1], reverse=True),
-    ):
-        row = [f"{order}.", result[0], result[1]]
-        rows_total.append(row)
+    rank = 1
+    for username in sorted(sums_for_users, key=sums_for_users.get, reverse=True):
+        current_points = sums_for_users[username]
+        out.append({"rank": rank, "username": username, "points": current_points})
+        rank += 1
+        # poresit pak stejne pozice?
 
     return render_template(
         "current_top_players.html",
-        thead=thead,
-        rows=rows,
-        rows_season=rows_season,
-        rows_total=rows_total,
-        season=season_result,
+        data=out,
     )
 
 
@@ -583,7 +533,6 @@ def guess_overview_season():
     locked = bool(os.getenv("SEASON_LOCK", ""))
 
     result = db.session.query(SeasonBet, User).join(User).all()
-
 
     data = {
         "DRIVER": {},
@@ -600,7 +549,6 @@ def guess_overview_season():
                 data[type].setdefault(user.username, {})[bet.rank] = value
 
     return render_template("guess_overview_season.html", data=data)
-
 
     users = db.session.query(User).all()
     stgds = db.session.query(Standings).all()
