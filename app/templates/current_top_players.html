@@ -4,105 +4,58 @@
     <h1 class="title">
         Aktuální pořadí - závody
     </h1>
-    <table class="table is-bordered is-striped  is-hoverable">
-        <thead>
-            <tr>
-                {% for cell in thead %}
-                <th> {{cell}} </th>
+    <table id="races" class="table is-bordered is-striped  is-hoverable" style="text-align:center"> 
 
-                {% endfor %}
-
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in rows %}
-            <tr>
-                {% for cell in row %}
-                <td>
-                    {% if cell == '1.' %}
-                    <ion-icon name="trophy" id="trophy"></ion-icon>
-                    {% else %}
-                    {{cell}}
-                    {% endif %}
-
-
-                </td>
-                {% endfor %}
-            </tr>
-            {% endfor %}
-        </tbody>
     </table>
 </div>
 
-<div class="box">
-    <h1 class="title">
-        Aktuální pořadí - sezona
-    </h1>
-    <table class="table is-bordered is-striped  is-hoverable">
-        <thead>
-            <tr>
-                {% for cell in thead %}
-                <th> {{cell}} </th>
 
-                {% endfor %}
+<script>
 
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in rows_season %}
-            <tr>
-                {% for cell in row %}
-                <td>
-                    {% if cell == '1.' %}
-                    <ion-icon name="trophy" id="trophy"></ion-icon>
-                    {% else %}
-                    {{cell}}
-                    {% endif %}
+    function generateTableHead(table, data, type) {
+      let thead = table.createTHead();
+      let row = thead.insertRow();
+      let th = document.createElement("th");
+        let text = document.createTextNode(type);
+        th.appendChild(text);
+        row.appendChild(th);
+      
+    
+      for (let key of data) {
+        let th = document.createElement("th");
+        let text = document.createTextNode(key);
+        th.appendChild(text);
+        row.appendChild(th);
+      }
+    }
+    
+    function generateTable(table, data, range) {
+       for (item of data){
+        let row = table.insertRow();
+        let cell = row.insertCell();
+        let bold_el = document.createElement("B");
+        let text = document.createTextNode(item.rank + ".");
+        bold_el.appendChild(text);
+        cell.appendChild(bold_el)
 
+        cell = row.insertCell();
+        text = document.createTextNode(item.username);
+        cell.appendChild(text);
 
-                </td>
-                {% endfor %}
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-</div>
-
-
-<div class="box">
-    <h1 class="title">
-        CELKOVÉ POŘADÍ
-    </h1>
-    <table class="table is-bordered is-striped  is-hoverable">
-        <thead>
-            <tr>
-                {% for cell in thead %}
-                <th> {{cell}} </th>
-
-                {% endfor %}
-
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in rows_total %}
-            <tr>
-                {% for cell in row %}
-                <td>
-                    {% if cell == '1.' %}
-                    <ion-icon name="trophy" id="trophy"></ion-icon>
-                    {% else %}
-                    {{cell}}
-                    {% endif %}
-
-
-                </td>
-                {% endfor %}
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-</div>
-
+        cell = row.insertCell();
+        text = document.createTextNode(item.points);
+        cell.appendChild(text);
+       }
+    }
+      
+    standings_races = {{ data | tojson | safe}}
+    
+    console.log(standings_races)
+    head_data = ["Hráč", "Počet Bodů"]
+    let table_races = document.querySelector("#races");
+    
+    generateTable(table_races, standings_races, standings_races.length);
+    generateTableHead(table_races, head_data, "Pořadí");
+    
+    </script>
 {% endblock %}
