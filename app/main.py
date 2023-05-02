@@ -879,7 +879,7 @@ def load_results_post(external_circuit_id):
         flash("ALREADY LOADED")
     else:
         result_data = get_result_for_round(
-            race.round, True if race.sprint_date == "SPRINT" else False
+            race.round, True if race.sprint_date else False
         )
 
         safety_car_result = request.form.get("safety_car")
