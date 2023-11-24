@@ -495,11 +495,10 @@ def get_rows_race_overview(race, users, current_user_id):
     return thead, rows
 
 
-
-
 @main.route("/top_players")
 @login_required
 def top_players():
+    total = defaultdict(float)
     out = []
     bet_user = db.session.query(RaceGuess, User).join(User).all()
     race_result_map = {
@@ -513,17 +512,35 @@ def top_players():
         if race_result and bet:
             _, points = evaluate_result_for_user(race_result, bet)
             sums_for_users[user.username] += points
-
+            total[user.username] += points
     rank = 1
     for username in sorted(sums_for_users, key=sums_for_users.get, reverse=True):
         current_points = sums_for_users[username]
-        out.append({"rank": rank, "username": username, "points": current_points})
+        out.append({"user": username, "points": current_points})
         rank += 1
         # poresit pak stejne pozice?
+    users = db.session.query(User).all()
+    season_results = compute_season_result(users)
+
+    season_out = []
+
+    for user in users:
+        points = season_results[user.username]["total"]
+        season_out.append({"points": points, "user": user.username})
+        total[user.username] += points
+    full_out = []
+
+    for username, points in total.items():
+        full_out.append({"points": points, "user": username})
+    # import pdb; pdb.set_trace()
+    data = {}
+    data["RACE"] = sorted(out, key=lambda d: d["points"], reverse=True)
+    data["SEASON"] = sorted(season_out, key=lambda d: d["points"], reverse=True)
+    data["FULL"] = sorted(full_out, key=lambda d: d["points"], reverse=True)
 
     return render_template(
         "current_top_players.html",
-        data=out,
+        data=data,
     )
 
 
@@ -533,109 +550,90 @@ def guess_overview_season():
     locked = bool(os.getenv("SEASON_LOCK", ""))
 
     result = db.session.query(SeasonBet, User).join(User).all()
-
     data = {
         "DRIVER": {},
         "TEAM": {},
     }
+    users = db.session.query(User).all()
+    stgds = db.session.query(Standings).all()
+    season_results = compute_season_result(users)
 
+    # import pdb;pdb.set_trace()
     for type in ("DRIVER", "TEAM"):
         for bet, user in result:
             if bet.type == type:
-                if current_user.id != user.id and not locked:
-                    value = "LOCKED"
-                else:
-                    value = bet.value
-                data[type].setdefault(user.username, {})[bet.rank] = value
+                value = bet.value
+                data[type].setdefault(user.username, {}).setdefault(bet.rank, {})[
+                    "bet"
+                ] = value
 
-    return render_template("guess_overview_season.html", data=data)
-
-    users = db.session.query(User).all()
-    stgds = db.session.query(Standings).all()
-
-    thead_drivers = [
-        "Jezdci",
-        "Výsledek",
-    ]
-    season_results = compute_season_result(users)
-
-    rows_drivers = []
-    for user in sorted(users, key=lambda x: x.username):
-        thead_drivers.append(user.username)
-
-        result_driver = get_season_result_driver(user.username, season_results)
-        thead_drivers.append(result_driver)
-
-    guess_user_map = get_user_guess_map(users)
+                points = season_results[user.username]["data"][type.lower() + "s"][
+                    bet.rank
+                ]["points"]
+                data[type].setdefault(user.username, {}).setdefault(bet.rank, {})[
+                    "points"
+                ] = points
 
     stgds_drivers = {
         int(item.position): item.name for item in stgds if item.type == "DRIVER"
     }
 
-    for order in range(1, 21):
-        label = "MISTR" if order == 1 else f"{order}."
-        result_for_driver = stgds_drivers[order]  # TODO get result from data
-        row = [label, result_for_driver]
-        row.extend(season_row_driver(order, guess_user_map, season_results))
-        rows_drivers.append(row)
-
-    thead_constr = [
-        "Týmy",
-        "Výsledek",
-    ]
-
-    rows_constr = []
-    for user in sorted(users, key=lambda x: x.username):
-        thead_constr.append(user.username)
-
-        result_constr = get_season_result_constr(user.username, season_results)
-        thead_constr.append(result_constr)
-
     stgds_teams = {
         int(item.position): item.name for item in stgds if item.type == "TEAM"
     }
 
-    for order in range(1, 11):
-        label = "MISTR" if order == 1 else f"{order}."
-        result_for_constr = stgds_teams[order]
-        row = [label, result_for_constr]
-        row.extend(season_row_constr(order, guess_user_map, season_results))
-        rows_constr.append(row)
+    stgds_team_match = {}
 
-    thead_team = ["Souboj v tymu", "Lepsi - horsi (vysl.)"]
-
-    rows_team = []
-    for user in sorted(users, key=lambda x: x.username):
-        thead_team.append(user.username)
-
-        result_team = get_season_team_match(user.username, season_results)
-        thead_team.append(result_team)
-
-    for team in sorted(
-        list(team_drivers_map.keys())
-    ):  ### udelat sort podle vyseldu TODO
-        row = [
-            team,
-        ]
+    data["TEAM_MATCH"] = {}
+    for team in sorted(list(team_drivers_map.keys())):
         better_worse = get_team_match_stdg_result(season_results, team)
-        row.append(better_worse)
+        stgds_team_match[team] = better_worse
 
-        results_for_users = team_match_row(
-            team, sorted(users, key=lambda x: x.username), season_results
-        )
-        row.extend(results_for_users)
+        for user in season_results.keys():
+            user_bet = season_results[user]["data"]["team_match"].get(team, {})
+            if not user_bet:
+                points = 0
+            
+            else:
+                points = user_bet["points"]
+            data["TEAM_MATCH"].setdefault(user, {}).setdefault(team, {})[
+                "points"
+            ] = points
+            better = "n/a"
+            worse = "n/a"
+            for driver, res in user_bet.get("bet", {}).items():
+                if res == True:
+                    better = driver
+                if res == False:
+                    worse = driver
 
-        rows_team.append(row)
+            data["TEAM_MATCH"].setdefault(user, {}).setdefault(team, {})[
+                "bet"
+            ] = f"{better} > {worse}"
 
-    return render_template(
-        "guess_overview_season.html",
-        thead_drivers=thead_drivers,
-        rows_drivers=rows_drivers,
-        thead_constr=thead_constr,
-        rows_constr=rows_constr,
-        thead_team=thead_team,
-        rows_team=rows_team,
-    )
+    data["SUMS"] = {
+        "DRIVER": {},
+        "TEAM": {},
+        "TEAM_MATCH": {},
+    }  ### SUMS.DRIVERS[username] = points
+    for user in users:
+        for type in ("DRIVER", "TEAM", "TEAM_MATCH"):
+            data["SUMS"][type][user.username] = _get_sum_user(data[type].get(user.username, {}))
+
+    data["DRIVER_RESULT"] = stgds_drivers
+    data["TEAM_RESULT"] = stgds_teams
+    data["TEAM_MATCH_RESULT"] = stgds_team_match
+
+    return render_template("guess_overview_season.html", data=data)
+
+
+def _get_sum_user(data):
+    out = 0
+    if data:
+        for item in data.values():
+            out += item["points"]
+
+    return out
 
 
 def season_row_driver(order, user_guess_map, season_results):
@@ -678,7 +676,7 @@ def get_team_match_stdg_result(season_results, team):
                 better = driver
             if res == False:
                 worse = driver
-        return f"{better} - {worse}"
+        return f"{better} > {worse}"
 
 
 def team_match_row(team, users, season_results):
@@ -909,7 +907,7 @@ def load_standings_route():
     if current_user.role != "ADMIN":
         raise Exception
     message = load_standings()
-    return redirect(url_for(".results_table", message=message))
+    return redirect(url_for(".top_players", message=message))
 
 
 @main.route("/results/", methods=["GET"])
@@ -984,14 +982,20 @@ def compute_season_result(users):
 
     out = {}
     for user in users:
-        season_guess = (
-            db.session.query(SeasonGuess).filter(SeasonGuess.user_id == user.id).first()
-        )
+        bets_for_user = [
+            bet
+            for bet in (
+                db.session.query(SeasonBet).filter(SeasonBet.user_id == user.id).all()
+            )
+        ]
+
+        bet = SeasonBet.serialize(bets_for_user)
         season_drivers_for_user = season_result(
-            season_guess, drivers_map, std_type="DRIVERS"
+            bet["DRIVER"], drivers_map, std_type="DRIVERS"
         )
-        season_teams_for_user = season_result(season_guess, teams_map, std_type="TEAMS")
-        team_match_for_user = team_match_results(season_guess, drivers)
+        season_teams_for_user = season_result(bet["TEAM"], teams_map, std_type="TEAMS")
+
+        team_match_for_user = team_match_results(bet["DRIVER"], drivers)
 
         # total points per user
         # import pdb; pdb.set_trace()
@@ -1000,6 +1004,9 @@ def compute_season_result(users):
             season_teams_for_user,
             team_match_for_user,
         )
+
+        # import pdb;pdb.set_trace()
+
         out[user.username] = {
             "total": total_points,
             "data": {
@@ -1008,6 +1015,7 @@ def compute_season_result(users):
                 "team_match": team_match_for_user,
             },
         }
+    #import pdb; pdb.set_trace()
     # detailed points per user
     return out
 

@@ -2,6 +2,8 @@ from flask_login import UserMixin
 
 from app import db
 from datetime import datetime
+
+
 class User(UserMixin, db.Model):
     __tablename__ = "user"
 
@@ -26,7 +28,7 @@ class Race(db.Model):
     sprint_date = db.Column(db.TIMESTAMP(timezone=True))
     qualification_date = db.Column(db.TIMESTAMP(timezone=True))
     race_date = db.Column(db.TIMESTAMP(timezone=True))
-    #type = db.Column(db.String(100))
+    # type = db.Column(db.String(100))
 
     @classmethod
     def race_from_data(cls, data):
@@ -41,23 +43,22 @@ class Race(db.Model):
             "name": data["raceName"],
             "round": int(data["round"]),
             "country": data["Circuit"]["Location"]["country"],
-            "circuit_name":  data["Circuit"]["circuitName"],
-            "external_circuit_id": data["Circuit"]["circuitId"], 
-            
+            "circuit_name": data["Circuit"]["circuitName"],
+            "external_circuit_id": data["Circuit"]["circuitId"],
             # dates
             "sprint_date": cls.format_date(data.get("Sprint") or None),
             "qualification_date": cls.format_date(data.get("Qualifying") or None),
-            "race_date": cls.format_date(data)         
+            "race_date": cls.format_date(data),
         }
 
-        return cls(
-            **kwargs
-        )
+        return cls(**kwargs)
 
     @staticmethod
     def format_date(data):
         if data:
-            return datetime.fromisoformat(data["date"] + "T" + data["time"][:-1]) # should be UTC!
+            return datetime.fromisoformat(
+                data["date"] + "T" + data["time"][:-1]
+            )  # should be UTC!
         else:
             return None
 
@@ -169,6 +170,7 @@ class Driver(db.Model):
             "code": self.code,
         }
 
+
 class Constructor(db.Model):
     __tablename__ = "constructor"
 
@@ -183,9 +185,10 @@ class Constructor(db.Model):
     def serialize(self):
         return {
             "team_id": self.constructorId,
-            "name":  self.name,
+            "name": self.name,
             "code": self.code,
         }
+
 
 class BonusGuess(db.Model):
     __tablename__ = "bonusguess"
@@ -210,16 +213,15 @@ class Standings(db.Model):
     points = db.Column(db.String(20))
 
 
-
 class SeasonBet(db.Model):
     __tablename__ = "season_bet"
 
     id = db.Column(db.Integer, primary_key=True)
     # driver/team code
     value = db.Column(db.String(50))
-    rank = db.Column(db.Integer) 
-    
-    type = db.Column(db.String(50)) # DRIVER, TEAM
+    rank = db.Column(db.Integer)
+
+    type = db.Column(db.String(50))  # DRIVER, TEAM
     # FKs  user_id, race_id
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
 
@@ -228,15 +230,14 @@ class SeasonBet(db.Model):
         if type:
             data["type"] = type
 
-        
         if isinstance(data, list):
             return [cls.from_data(elem) for elem in data]
-        
+
         kwargs = {
             "value": data["value"],
             "rank": int(data["rank"]),
             "type": type or data["type"],
-            "user_id": data["user_id"]
+            "user_id": data["user_id"],
         }
         assert kwargs["type"] in ("TEAM", "DRIVER")
         return cls(**kwargs)
@@ -246,5 +247,5 @@ class SeasonBet(db.Model):
         out = {"TEAM": {}, "DRIVER": {}}
         for item in bets:
             out.setdefault(item.type, {})[item.rank] = item.value
-        
+
         return out
