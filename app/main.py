@@ -592,7 +592,7 @@ def guess_overview_season():
         for user in season_results.keys():
             user_bet = season_results[user]["data"]["team_match"].get(team, {})
             if not user_bet:
-                points = 0
+                continue
             
             else:
                 points = user_bet["points"]
