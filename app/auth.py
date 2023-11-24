@@ -69,7 +69,7 @@ def signup_post():
         # create a new user with the form data. Hash the password so the plaintext version isn't saved.
         new_user = User(
             username=username,
-            password=generate_password_hash(password, method="sha256"),
+            password=generate_password_hash(password, method="pbkdf2:sha256"),
         )
 
         # add the new user to the database
