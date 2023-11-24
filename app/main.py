@@ -590,15 +590,23 @@ def guess_overview_season():
         stgds_team_match[team] = better_worse
 
         for user in season_results.keys():
-            user_bet = season_results[user]["data"]["team_match"][team]
+            user_bet = season_results[user]["data"]["team_match"].get(team, {})
+            if not user_bet:
+                points = 0
+            
+            else:
+                points = user_bet["points"]
             data["TEAM_MATCH"].setdefault(user, {}).setdefault(team, {})[
                 "points"
-            ] = user_bet["points"]
-            for driver, res in user_bet["bet"].items():
+            ] = points
+            better = "n/a"
+            worse = "n/a"
+            for driver, res in user_bet.get("bet", {}).items():
                 if res == True:
                     better = driver
                 if res == False:
                     worse = driver
+
             data["TEAM_MATCH"].setdefault(user, {}).setdefault(team, {})[
                 "bet"
             ] = f"{better} > {worse}"
@@ -610,7 +618,7 @@ def guess_overview_season():
     }  ### SUMS.DRIVERS[username] = points
     for user in users:
         for type in ("DRIVER", "TEAM", "TEAM_MATCH"):
-            data["SUMS"][type][user.username] = _get_sum_user(data[type][user.username])
+            data["SUMS"][type][user.username] = _get_sum_user(data[type].get(user.username, {}))
 
     data["DRIVER_RESULT"] = stgds_drivers
     data["TEAM_RESULT"] = stgds_teams
@@ -621,8 +629,9 @@ def guess_overview_season():
 
 def _get_sum_user(data):
     out = 0
-    for item in data.values():
-        out += item["points"]
+    if data:
+        for item in data.values():
+            out += item["points"]
 
     return out
 
@@ -1006,6 +1015,7 @@ def compute_season_result(users):
                 "team_match": team_match_for_user,
             },
         }
+    #import pdb; pdb.set_trace()
     # detailed points per user
     return out
 

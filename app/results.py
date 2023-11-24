@@ -179,28 +179,34 @@ team_drivers_map = {
 def team_match_results(bet, results):
     out = {}
     for team, drivers in team_drivers_map.items():
-        first_driver_bet = get_position_from_season_bet(drivers[0], bet)
-        first_driver_stdgs = get_position_for_driver_from_standings(drivers[0], results)
-        second_driver_bet = get_position_from_season_bet(drivers[1], bet)
-        second_driver_stdgs = get_position_for_driver_from_standings(
-            drivers[1], results
-        )
-        if first_driver_bet is None or second_driver_bet is None:
+        if bet:
+            first_driver_bet = get_position_from_season_bet(drivers[0], bet)
+            first_driver_stdgs = get_position_for_driver_from_standings(drivers[0], results)
+            second_driver_bet = get_position_from_season_bet(drivers[1], bet)
+            second_driver_stdgs = get_position_for_driver_from_standings(
+                drivers[1], results
+            )
+            if first_driver_bet is None or second_driver_bet is None:
+                continue
+
+            # if 1st driver is better -> automatically it means that second driver is worse
+            first_better_bet = first_driver_bet < second_driver_bet
+            first_better_stdgs = first_driver_stdgs < second_driver_stdgs
+
+            hit = team_match_hit(first_better_bet, first_better_stdgs)
+
+        
+            out[team] = {
+                "points": 1 if hit else 0,
+                "bet": {drivers[0]: first_better_bet, drivers[1]: not first_better_bet},
+                "stdgs": {
+                    drivers[0]: first_better_stdgs,
+                    drivers[1]: not first_better_stdgs,
+                },
+            }
+        else:
             continue
-
-        # if 1st driver is better -> automatically it means that second driver is worse
-        first_better_bet = first_driver_bet < second_driver_bet
-        first_better_stdgs = first_driver_stdgs < second_driver_stdgs
-
-        hit = team_match_hit(first_better_bet, first_better_stdgs)
-        out[team] = {
-            "points": 1 if hit else 0,
-            "bet": {drivers[0]: first_better_bet, drivers[1]: not first_better_bet},
-            "stdgs": {
-                drivers[0]: first_better_stdgs,
-                drivers[1]: not first_better_stdgs,
-            },
-        }
+            #out[team] = {"points": 0, "bet": {}, "stdgs": {}}
     return out
 
 
@@ -218,7 +224,7 @@ def get_position_from_season_bet(driver, bet):
     if bet is None:
         return "N/A"
     for pos in range(1, 21):
-        bet_on_position = bet[pos]
+        bet_on_position = bet.get(pos, "")
         if bet_on_position == driver:
             return int(pos)
 
@@ -260,8 +266,8 @@ def season_result(bet, results_map, std_type=None):
 
     for pos in range(1, cfg["range"] + 1):
         points = 0
-
-        if bet[pos] == results_map[pos]:
+        
+        if bet and bet.get(pos, "") == results_map[pos]:
             points += cfg["hit"]
             if pos == 1:
                 points += cfg["champion"]
