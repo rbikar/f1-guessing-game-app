@@ -1,8 +1,8 @@
-Flask
+Flask<3
 gunicorn
 Jinja2
 Flask-Login
 Flask-SQLAlchemy
-Werkzeug
+Werkzeug<3
 psycopg2-binary
 pytz
