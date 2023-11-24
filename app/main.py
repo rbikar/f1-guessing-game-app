@@ -230,7 +230,7 @@ def season():
     drivers = [
         driver.serialize()
         for driver in db.session.query(Driver).all()
-        if driver.code != "DRU"  # to change to driver.season_active
+        if driver.code not in ("DRU", "RIC")  # to change to driver.season_active
     ]
     teams = [constr.serialize() for constr in db.session.query(Constructor).all()]
     assert len(drivers) == 20
