@@ -2,7 +2,7 @@ from time import sleep
 from .ergast_client.client import Client
 import requests
 
-API = ""
+API = "https://ergast.com/api/f1/2023/"
 
 
 def get_result(client, round, rank):
@@ -106,7 +106,7 @@ def evaluate_result_for_user(result, guess):
 
 
 def get_drivers_standings():
-    url = f"{API}/driverStandings.json"
+    url = f"{API}driverStandings.json"
     response = requests.get(url)
     data = response.json()
 
@@ -115,8 +115,9 @@ def get_drivers_standings():
     for item in standings:
         position = item["position"]
         points = item["points"]
+        # import pdb; pdb.set_trace()
         driver = item["Driver"]["code"]
-        if driver in ("DRU"):
+        if driver in ("DRU", "RIC", "LAW"):
             continue
 
         to_db_items.append({"position": position, "points": points, "driver": driver})
@@ -141,7 +142,7 @@ CONSTRUCTOR_ID_CODE_MAP = {
 
 
 def get_constructors_standings():
-    url = f"{API}/constructorStandings.json"
+    url = f"{API}constructorStandings.json"
     response = requests.get(url)
     data = response.json()
 
@@ -165,13 +166,13 @@ team_drivers_map = {
     "MER": ("HAM", "RUS"),
     "REB": ("VER", "PER"),
     "FER": ("LEC", "SAI"),
-    "MCL": ("RIC", "NOR"),
-    "ALP": ("ALO", "OCO"),
+    "MCL": ("NOR", "PIA"),
+    "ALP": ("GAS", "OCO"),
     "ALF": ("ZHO", "BOT"),
-    "ALT": ("TSU", "GAS"),
-    "HAS": ("MSC", "MAG"),
-    "WIL": ("LAT", "ALB"),
-    "AST": ("VET", "STR"),
+    "ALT": ("TSU", "DEV"),
+    "HAS": ("HUL", "MAG"),
+    "WIL": ("SAR", "ALB"),
+    "AST": ("ALO", "STR"),
 }
 
 
@@ -217,8 +218,7 @@ def get_position_from_season_bet(driver, bet):
     if bet is None:
         return "N/A"
     for pos in range(1, 21):
-        attr = f"_{pos}d"
-        bet_on_position = getattr(bet, attr)
+        bet_on_position = bet[pos]
         if bet_on_position == driver:
             return int(pos)
 
@@ -254,19 +254,14 @@ def season_result(bet, results_map, std_type=None):
             "range": 10,
         },
     }
-
+    # import pdb; pdb.set_trace()
     result_to_display = {}  # position, typ, body
     cfg = pointing[std_type.lower()]
 
     for pos in range(1, cfg["range"] + 1):
         points = 0
-        attr = f"_{pos}{cfg['type']}"
-        if bet is None:
-            bet_on_position = "N/S"
-        else:
-            bet_on_position = getattr(bet, attr)
 
-        if bet_on_position == results_map[pos]:
+        if bet[pos] == results_map[pos]:
             points += cfg["hit"]
             if pos == 1:
                 points += cfg["champion"]

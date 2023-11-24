@@ -1,54 +1,69 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="box content is-medium otv">
+<div class="box content is-medium" style="overflow-x:auto;">
 
-<table id="drivers">
+<table id="drivers" class="table is-bordered is-striped  is-hoverable">
 
 
 </table>
 </div> 
 
-<div class="box content is-medium otv">
+<div class="box content is-medium">
 
-    <table id="teams">
+    <table id="teams" class="table is-bordered is-striped  is-hoverable">
     
     
     </table>
 </div> 
+<div class="box content is-medium">
 
+  <table id="team_match" class="table is-bordered is-striped  is-hoverable">
+  
+  
+  </table>
+</div> 
 
 <script>
 
-function generateTableHead(table, data, type) {
+function generateTableHead(table, data, type, sums) {
   let thead = table.createTHead();
   let row = thead.insertRow();
   let th = document.createElement("th");
-    let text = document.createTextNode(type);
-    th.appendChild(text);
-    row.appendChild(th);
-  
+  let text = document.createTextNode(type);
+  th.colSpan = 2
+  th.appendChild(text);
+  row.appendChild(th);
 
   for (let key of data) {
     let th = document.createElement("th");
-    let text = document.createTextNode(key);
+    let text = document.createTextNode(key + " (" + sums[key] + " b.)")// + data.key.total);
+    th.colSpan = 2
+    th.style.textAlign = "center"
     th.appendChild(text);
     row.appendChild(th);
   }
 }
 
-function generateTable(table, data, range) {
+function generateTable(table, data, range, results) {
 
    for (let i=1; i<range; i++){
     let row = table.insertRow();
     let cell = row.insertCell();
     let text = document.createTextNode(i);
     cell.appendChild(text);
+
+    let cell_result = row.insertCell();
+    let text_result = document.createTextNode(results[i]); //do kurzivy
+    cell_result.style.fontStyle = "italic";
+    cell_result.appendChild(text_result);
+
     for (const [key, item] of Object.entries(data)){
         console.log(key)
         console.log(item)
         console.log(item[i]);
         let cell = row.insertCell();
+        let cell_points = row.insertCell();
         if (item[i] == "LOCKED"){
             const icon = document.createElement("ion-icon")
             icon.name = "lock-closed"
@@ -56,8 +71,12 @@ function generateTable(table, data, range) {
             cell.appendChild(icon)
         }//udelat jeste locked
         else if (item[i]){
-            let text = document.createTextNode(item[i]);
+            let text = document.createTextNode(item[i].bet);
             cell.appendChild(text);
+
+            text = document.createTextNode(item[i].points);
+            cell_points.appendChild(text);
+
         }
         else
         {
@@ -72,18 +91,63 @@ function generateTable(table, data, range) {
   
 }
 
+function generateTableTeamMatch(table, data, range, results) {
+
+for (const [key, item] of Object.entries(results)){
+ let row = table.insertRow();
+ let cell = row.insertCell();
+ let text = document.createTextNode(key);
+ cell.appendChild(text);
+
+ let cell_result = row.insertCell();
+ let text_result = document.createTextNode(results[key]); //do kurzivy
+ cell_result.style.fontStyle = "italic";
+ cell_result.appendChild(text_result);
+
+ for (const [key_data, item] of Object.entries(data)){
+        console.log(key_data)
+        console.log(item)
+
+        let cell = row.insertCell();
+        let cell_points = row.insertCell();
+        let text = document.createTextNode(item[key].bet);
+        cell.appendChild(text);
+
+        text = document.createTextNode(item[key].points);
+        cell_points.appendChild(text);
+
+  }
+
+}
+
+}
+
 drivers_data = {{ data.DRIVER | tojson | safe}}
 teamsdata = {{ data.TEAM | tojson | safe}}
 
+drivers_result = {{ data.DRIVER_RESULT | tojson | safe}}
+teams_result = {{ data.TEAM_RESULT | tojson | safe}}
+
+team_match_data = {{ data.TEAM_MATCH | tojson | safe}}
+team_match_results =  {{ data.TEAM_MATCH_RESULT | tojson | safe}}
+
+sums = {{ data.SUMS | tojson | safe}}
+console.log(sums)
+console.log(sums.DRIVER)
 console.log(drivers_data)
 head_data = Object.keys(drivers_data);
 let table_drivers = document.querySelector("#drivers");
-generateTable(table_drivers, drivers_data, 21);
-generateTableHead(table_drivers, head_data, "JEZDCI");
+generateTable(table_drivers, drivers_data, 21, drivers_result);
+generateTableHead(table_drivers, head_data, "JEZDCI", sums.DRIVER);
 
 let table_teams = document.querySelector("#teams");
-generateTable(table_teams, teamsdata, 11);
-generateTableHead(table_teams, head_data, "KONSTRUKTÉŘI");
+generateTable(table_teams, teamsdata, 11, teams_result);
+generateTableHead(table_teams, head_data, "KONSTRUKTÉŘI", sums.TEAM);
+
+
+let table_teammatch = document.querySelector("#team_match");
+generateTableTeamMatch(table_teammatch, team_match_data, 11, team_match_results);
+generateTableHead(table_teammatch, head_data, "TÝMOVÝ SOUBOJ", sums.TEAM_MATCH);
 
 </script>
 {% endblock %}

@@ -7,8 +7,26 @@
     <table id="races" class="table is-bordered is-striped  is-hoverable" style="text-align:center"> 
 
     </table>
-</div>
 
+</div>
+<div class="box">
+  <h1 class="title">
+      Aktuální pořadí - sezona
+  </h1>
+  <table id="season" class="table is-bordered is-striped  is-hoverable" style="text-align:center"> 
+
+  </table>
+
+</div>
+<div class="box">
+  <h1 class="title">
+      Celkové pořadí
+  </h1>
+  <table id="full" class="table is-bordered is-striped  is-hoverable" style="text-align:center"> 
+
+  </table>
+
+</div>
 
 <script>
 
@@ -30,25 +48,31 @@
     }
     
     function generateTable(table, data, range) {
-       for (item of data){
+      let i = 1 
+      for (item of data){
         let row = table.insertRow();
         let cell = row.insertCell();
         let bold_el = document.createElement("B");
-        let text = document.createTextNode(item.rank + ".");
+        let text = document.createTextNode(i + ".");
         bold_el.appendChild(text);
         cell.appendChild(bold_el)
 
         cell = row.insertCell();
-        text = document.createTextNode(item.username);
+        text = document.createTextNode(item.user);
         cell.appendChild(text);
 
         cell = row.insertCell();
         text = document.createTextNode(item.points);
         cell.appendChild(text);
+        i++;
        }
     }
-      
-    standings_races = {{ data | tojson | safe}}
+    standings_races = {{ data.RACE | tojson | safe}}
+
+    standings_season = {{ data.SEASON | tojson | safe}}
+
+    standings_full = {{ data.FULL | tojson | safe}}
+
     
     console.log(standings_races)
     head_data = ["Hráč", "Počet Bodů"]
@@ -56,6 +80,16 @@
     
     generateTable(table_races, standings_races, standings_races.length);
     generateTableHead(table_races, head_data, "Pořadí");
+
+    let table_season = document.querySelector("#season");
     
+    generateTable(table_season, standings_season, standings_season.length);
+    generateTableHead(table_season, head_data, "Pořadí");
+
+    let table_full = document.querySelector("#full");
+    
+    generateTable(table_full, standings_full, standings_full.length);
+    generateTableHead(table_full, head_data, "Pořadí");
+
     </script>
 {% endblock %}
