@@ -13,7 +13,7 @@ def get_current_race(races):
     for race in sorted(races, key=lambda x: x.race_date, reverse=True):
         if race.race_date.replace(tzinfo=pytz.utc) >= time:
             candidates.append(race)
-        if race.round == "22":
+        if race.round == 22:
             last.append(race)
     if not candidates:
         candidates.extend(last)
