@@ -1,9 +1,9 @@
-Flask<3
+Flask
 gunicorn
 Jinja2
 Flask-Login
 Flask-SQLAlchemy
-Werkzeug<3
+Werkzeug
 psycopg2
 pytz
 Flask-Migrate

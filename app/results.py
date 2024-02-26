@@ -2,7 +2,7 @@ from time import sleep
 from .ergast_client.client import Client
 import requests
 
-API = "https://ergast.com/api/f1/2023/"
+API = "https://ergast.com/api/f1/2024/"
 
 
 def get_result(client, round, rank):
@@ -117,24 +117,24 @@ def get_drivers_standings():
         points = item["points"]
         # import pdb; pdb.set_trace()
         driver = item["Driver"]["code"]
-        if driver in ("DRU", "RIC", "LAW"):
+        if driver in ("DRU", "LAW"):
             continue
 
         to_db_items.append({"position": position, "points": points, "driver": driver})
 
     return to_db_items
 
-
+# TODO upravit podle skutecnosti
 CONSTRUCTOR_ID_CODE_MAP = {
     "red_bull": "REB",
     "ferrari": "FER",
     "mercedes": "MER",
     "alpine": "ALP",
     "mclaren": "MCL",
-    "alfa": "ALF",
+    "TODO1": "KIK",
     "aston_martin": "ASM",
     "haas": "HAS",
-    "alphatauri": "ALT",
+    "TODO2": "VIS",
     "williams": "WIL",
 }
 
@@ -168,11 +168,11 @@ team_drivers_map = {
     "FER": ("LEC", "SAI"),
     "MCL": ("NOR", "PIA"),
     "ALP": ("GAS", "OCO"),
-    "ALF": ("ZHO", "BOT"),
-    "ALT": ("TSU", "DEV"),
+    "KIK": ("ZHO", "BOT"),
+    "VIS": ("TSU", "RIC"),
     "HAS": ("HUL", "MAG"),
     "WIL": ("SAR", "ALB"),
-    "AST": ("ALO", "STR"),
+    "ASM": ("ALO", "STR"),
 }
 
 
@@ -266,15 +266,15 @@ def season_result(bet, results_map, std_type=None):
 
     for pos in range(1, cfg["range"] + 1):
         points = 0
-        
-        if bet and bet.get(pos, "") == results_map[pos]:
-            points += cfg["hit"]
-            if pos == 1:
-                points += cfg["champion"]
+        if results_map:
+            if bet and bet.get(pos, "") == results_map[pos]:
+                points += cfg["hit"]
+                if pos == 1:
+                    points += cfg["champion"]
 
-        result_to_display[pos] = {
-            "points": points,
-            "type": cfg["type"],
-        }
+            result_to_display[pos] = {
+                "points": points,
+                "type": cfg["type"],
+            }
 
     return result_to_display

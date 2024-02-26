@@ -10,7 +10,7 @@ class User(UserMixin, db.Model):
     id = db.Column(
         db.Integer, primary_key=True
     )  # primary keys are required by SQLAlchemy
-    password = db.Column(db.String(100))
+    password = db.Column(db.String(400))
     username = db.Column(db.String(100), unique=True)
     role = db.Column(db.String(100))
 
@@ -56,8 +56,9 @@ class Race(db.Model):
     @staticmethod
     def format_date(data):
         if data:
+            time = data.get("time", [])[:-1] or "00:00:00"
             return datetime.fromisoformat(
-                data["date"] + "T" + data["time"][:-1]
+                data["date"] + "T" + time
             )  # should be UTC!
         else:
             return None
