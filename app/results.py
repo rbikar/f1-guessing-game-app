@@ -2,7 +2,7 @@ from time import sleep
 from .ergast_client.client import Client
 import requests
 
-API = "https://ergast.com/api/f1/2023/"
+API = "https://ergast.com/api/f1/2024/"
 
 
 def get_result(client, round, rank):
@@ -168,11 +168,11 @@ team_drivers_map = {
     "FER": ("LEC", "SAI"),
     "MCL": ("NOR", "PIA"),
     "ALP": ("GAS", "OCO"),
-    "ALF": ("ZHO", "BOT"),
-    "ALT": ("TSU", "DEV"),
+    "KIK": ("ZHO", "BOT"),
+    "VIS": ("TSU", "RIC"),
     "HAS": ("HUL", "MAG"),
     "WIL": ("SAR", "ALB"),
-    "AST": ("ALO", "STR"),
+    "ASM": ("ALO", "STR"),
 }
 
 
@@ -266,15 +266,15 @@ def season_result(bet, results_map, std_type=None):
 
     for pos in range(1, cfg["range"] + 1):
         points = 0
-        
-        if bet and bet.get(pos, "") == results_map[pos]:
-            points += cfg["hit"]
-            if pos == 1:
-                points += cfg["champion"]
+        if results_map:
+            if bet and bet.get(pos, "") == results_map[pos]:
+                points += cfg["hit"]
+                if pos == 1:
+                    points += cfg["champion"]
 
-        result_to_display[pos] = {
-            "points": points,
-            "type": cfg["type"],
-        }
+            result_to_display[pos] = {
+                "points": points,
+                "type": cfg["type"],
+            }
 
     return result_to_display

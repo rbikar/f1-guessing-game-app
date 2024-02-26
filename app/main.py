@@ -193,7 +193,7 @@ def races():
 
     races = db.session.query(Race).all()
     currrent_race = get_current_race(races)
-    table_head = ["F1 2023", "Q", "SPRINT", "ZÁVOD"]
+    table_head = ["F1 2024", "Q", "SPRINT", "ZÁVOD"]
     finished = []
     current = []
     upcoming = []
@@ -230,7 +230,7 @@ def season():
     drivers = [
         driver.serialize()
         for driver in db.session.query(Driver).all()
-        if driver.code not in ("DRU", "RIC")  # to change to driver.season_active
+        #if driver.code not in ("DRU", "RIC")  # to change to driver.season_active
     ]
     teams = [constr.serialize() for constr in db.session.query(Constructor).all()]
     assert len(drivers) == 20

@@ -56,8 +56,9 @@ class Race(db.Model):
     @staticmethod
     def format_date(data):
         if data:
+            time = data.get("time", [])[:-1] or "00:00:00"
             return datetime.fromisoformat(
-                data["date"] + "T" + data["time"][:-1]
+                data["date"] + "T" + time
             )  # should be UTC!
         else:
             return None

@@ -37,5 +37,5 @@ upgrade db (connection details has to bet via env vars for non-dev DB)
 
 everytime use
 
-`flask db migrage -m "some message"`
+`flask db migrate -m "some message"`
 `flask db upgrade`
