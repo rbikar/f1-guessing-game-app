@@ -547,7 +547,9 @@ def top_players():
 @main.route("/guess_overview/season")
 @login_required
 def guess_overview_season():
-    locked = bool(os.getenv("SEASON_LOCK", ""))
+    results_available = bool(os.getenv("SEASON_RESULTS", ""))
+    if not results_available:
+        return render_template("wip.html")
 
     result = db.session.query(SeasonBet, User).join(User).all()
     data = {
@@ -558,7 +560,6 @@ def guess_overview_season():
     stgds = db.session.query(Standings).all()
     season_results = compute_season_result(users)
 
-    # import pdb;pdb.set_trace()
     for type in ("DRIVER", "TEAM"):
         for bet, user in result:
             if bet.type == type:
@@ -566,10 +567,8 @@ def guess_overview_season():
                 data[type].setdefault(user.username, {}).setdefault(bet.rank, {})[
                     "bet"
                 ] = value
-
-                points = season_results[user.username]["data"][type.lower() + "s"][
-                    bet.rank
-                ]["points"]
+                points = season_results[user.username]["data"][type.lower() + "s"].get(
+                    bet.rank, {}).get("points", 0)
                 data[type].setdefault(user.username, {}).setdefault(bet.rank, {})[
                     "points"
                 ] = points
@@ -583,7 +582,6 @@ def guess_overview_season():
     }
 
     stgds_team_match = {}
-
     data["TEAM_MATCH"] = {}
     for team in sorted(list(team_drivers_map.keys())):
         better_worse = get_team_match_stdg_result(season_results, team)
@@ -670,13 +668,16 @@ def season_row_constr(order, user_guess_map, season_results):
 
 def get_team_match_stdg_result(season_results, team):
     for item in season_results.values():
-        result = item["data"]["team_match"][team]["stdgs"]
-        for driver, res in result.items():
-            if res == True:
-                better = driver
-            if res == False:
-                worse = driver
-        return f"{better} > {worse}"
+        result = item["data"]["team_match"].get(team, {}).get("stdgs", {})
+        if result:
+            for driver, res in result.items():
+                if res == True:
+                    better = driver
+                if res == False:
+                    worse = driver
+            return f"{better} > {worse}"
+        else:
+            return "?"
 
 
 def team_match_row(team, users, season_results):

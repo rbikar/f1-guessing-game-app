@@ -117,24 +117,24 @@ def get_drivers_standings():
         points = item["points"]
         # import pdb; pdb.set_trace()
         driver = item["Driver"]["code"]
-        if driver in ("DRU", "RIC", "LAW"):
+        if driver in ("DRU", "LAW"):
             continue
 
         to_db_items.append({"position": position, "points": points, "driver": driver})
 
     return to_db_items
 
-
+# TODO upravit podle skutecnosti
 CONSTRUCTOR_ID_CODE_MAP = {
     "red_bull": "REB",
     "ferrari": "FER",
     "mercedes": "MER",
     "alpine": "ALP",
     "mclaren": "MCL",
-    "alfa": "ALF",
+    "TODO1": "KIK",
     "aston_martin": "ASM",
     "haas": "HAS",
-    "alphatauri": "ALT",
+    "TODO2": "VIS",
     "williams": "WIL",
 }
 
