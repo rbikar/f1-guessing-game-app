@@ -514,20 +514,21 @@ def top_players():
             sums_for_users[user.username] += points
             total[user.username] += points
     rank = 1
-    for username in sorted(sums_for_users, key=sums_for_users.get, reverse=True):
-        current_points = sums_for_users[username]
-        out.append({"user": username, "points": current_points})
-        rank += 1
-        # poresit pak stejne pozice?
-    users = db.session.query(User).all()
-    season_results = compute_season_result(users)
+    if False:
+        for username in sorted(sums_for_users, key=sums_for_users.get, reverse=True):
+            current_points = sums_for_users[username]
+            out.append({"user": username, "points": current_points})
+            rank += 1
+            # poresit pak stejne pozice?
+        users = db.session.query(User).all()
+        season_results = compute_season_result(users)
 
     season_out = []
-
-    for user in users:
-        points = season_results[user.username]["total"]
-        season_out.append({"points": points, "user": user.username})
-        total[user.username] += points
+    if False:
+        for user in users:
+            points = season_results[user.username]["total"]
+            season_out.append({"points": points, "user": user.username})
+            total[user.username] += points
     full_out = []
 
     for username, points in total.items():
