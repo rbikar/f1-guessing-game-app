@@ -162,9 +162,7 @@ def race_post(external_circuit_id):
     flash("Tip v pořádku uložen")
     start_times = {
         "q_start": date_or_none(race.qualification_date),
-        "s_start": date_or_none(race.sprint_date)
-        if race.sprint_date == "SPRINT"
-        else None,
+        "s_start": date_or_none(race.sprint_date) if race.sprint_date else None,
         "r_start": date_or_none(race.race_date),
     }
     return render_template(
@@ -173,7 +171,7 @@ def race_post(external_circuit_id):
         guess=guess,
         locks=locks,
         race=race,
-        race_type="SPRINT" if race.sprint_date else None,
+        race_type="SPRINT" if race.sprint_date else "NORMAL",
         bonus=bonus,
         start_times=start_times,
     )
@@ -449,7 +447,7 @@ def get_rows_race_overview(race, users, current_user_id):
     ]
 
     if race.sprint_date:
-        rows.insert(1, sprint_row)
+        rows.insert(0, sprint_row)
 
     row_map = {key: row for key, row in zip(keys, rows)}
     race_id = race.id
