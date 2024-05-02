@@ -5,20 +5,24 @@
         {{race.name}}
     </h1>
     <h2 class="subtitle restorelines">
-        {{ build_lock("Kvalifikace", start_times.q_start,  locks.qualification_date ) }} {% if start_times.s_start %}
+        {% if start_times.s_start %}
         {{ build_lock("Sprint", start_times.s_start,  locks.sprint_date ) }} {% endif %}
+        {{ build_lock("Kvalifikace", start_times.q_start,  locks.qualification_date ) }} 
         {{ build_lock("Závod", start_times.r_start,  locks.race_date ) }}
     </h2>
 </div>
 <div class="box"> {% with messages = get_flashed_messages() %} {% if messages %} <div class="notification is-success">
         {{ messages[0] }}
     </div> {% endif %} {% endwith %} <form method="POST" action="/race/{{race.external_circuit_id}}" id="race"  onsubmit='return validateFormRace();'>
-        <fieldset {%if  locks.qualification_date %} disabled {% endif %} style="margin: 15px; border: none; ">
-            {{ build_driver_select("Vítěz kvalifikace", "quali", drivers, guess.quali) }}
-        </fieldset> {% if race_type == "SPRINT" %} <fieldset {%if  locks.sprint_date %} disabled {% endif %}
+        {% if race_type == "SPRINT" %} <fieldset {%if  locks.sprint_date %} disabled {% endif %}
             style="margin: 15px; border: none; ">
             {{ build_driver_select("Vítěz sprintu", "sprint", drivers, guess.sprint) }}
-        </fieldset> {% endif %} <fieldset {%if locks.race_date %} disabled {% endif %}
+        </fieldset> {% endif %} 
+        <fieldset {%if  locks.qualification_date %} disabled {% endif %} style="margin: 15px; border: none; ">
+            {{ build_driver_select("Vítěz kvalifikace", "quali", drivers, guess.quali) }}
+        </fieldset> 
+        
+        <fieldset {%if locks.race_date %} disabled {% endif %}
             style="margin: 15px; border: none; ">
             {{ build_driver_select("Vítěz závodu", "first", drivers, guess.first) }}
             {{ build_driver_select("Druhé místo", "second", drivers, guess.second) }}
