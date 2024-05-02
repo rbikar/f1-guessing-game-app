@@ -434,7 +434,7 @@ def get_rows_race_overview(race, users, current_user_id):
         "bonus",
     ]
     if race.sprint_date:
-        keys.insert(1, "sprint")
+        keys.insert(0, "sprint")
 
     rows = [
         quali_row,
