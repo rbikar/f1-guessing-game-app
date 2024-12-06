@@ -355,9 +355,9 @@ def season_post():
 @main.route("/guess_overview")
 @login_required
 def guess_overview():
-    return render_template("wip.html")
-    if os.getenv("WIP", "1"):
-        return render_template("wip.html")
+    #return render_template("wip.html")
+    #if os.getenv("WIP", "1"):
+     #   return render_template("wip.html")
     data = {}
     users = db.session.query(User).all()
     all_races = db.session.query(Race).all()
@@ -509,24 +509,23 @@ def top_players():
         race_result = race_result_map.get(bet.race_id) or None
         if race_result and bet:
             _, points = evaluate_result_for_user(race_result, bet)
-            sums_for_users[user.username] += points
-            total[user.username] += points
-    rank = 1
-    if False:
-        for username in sorted(sums_for_users, key=sums_for_users.get, reverse=True):
-            current_points = sums_for_users[username]
-            out.append({"user": username, "points": current_points})
-            rank += 1
-            # poresit pak stejne pozice?
-        users = db.session.query(User).all()
-        season_results = compute_season_result(users)
+        else:
+            points = 0.0
+        sums_for_users[user.username] += points
+        total[user.username] += points
+
+    for username in sums_for_users:
+        current_points = sums_for_users[username]
+        out.append({"user": username, "points": current_points})
+        # poresit pak stejne pozice?
+    users = db.session.query(User).all()
+    season_results = compute_season_result(users)
 
     season_out = []
-    if False:
-        for user in users:
-            points = season_results[user.username]["total"]
-            season_out.append({"points": points, "user": user.username})
-            total[user.username] += points
+    for user in users:
+        points = season_results[user.username]["total"]
+        season_out.append({"points": points, "user": user.username})
+        total[user.username] += points
     full_out = []
 
     for username, points in total.items():
@@ -546,9 +545,9 @@ def top_players():
 @main.route("/guess_overview/season")
 @login_required
 def guess_overview_season():
-    results_available = bool(os.getenv("SEASON_RESULTS", ""))
-    if not results_available:
-        return render_template("wip.html")
+    #results_available = bool(os.getenv("SEASON_RESULTS", ""))
+    #if not results_available:
+    #    return render_template("wip.html")
 
     result = db.session.query(SeasonBet, User).join(User).all()
     data = {
@@ -936,7 +935,7 @@ def results_table(message=None):
 
 def load_standings():
     drivers_stdgs = get_drivers_standings()
-    sleep(1)
+    sleep(5)
     team_stdgs = get_constructors_standings()
     out = "ERROR"
     _types = ("DRIVER", "TEAM")

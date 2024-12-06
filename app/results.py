@@ -109,52 +109,60 @@ def get_drivers_standings():
     url = f"{API}driverStandings.json"
     response = requests.get(url)
     data = response.json()
-
     standings = data["MRData"]["StandingsTable"]["StandingsLists"][0]["DriverStandings"]
     to_db_items = []
     for item in standings:
-        position = item["position"]
         points = item["points"]
-        # import pdb; pdb.set_trace()
         driver = item["Driver"]["code"]
-        if driver in ("DRU", "LAW"):
+        if driver in ("DRU", "LAW", "BEA", "COL"):
             continue
 
-        to_db_items.append({"position": position, "points": points, "driver": driver})
+        to_db_items.append({"position": None, "points": int(points), "driver": driver})
+    for pos, item in enumerate(sorted(to_db_items, key=lambda d: d["points"], reverse=True), start=1):
+        item["position"] = pos
 
     return to_db_items
 
-# TODO upravit podle skutecnosti
 CONSTRUCTOR_ID_CODE_MAP = {
     "red_bull": "REB",
     "ferrari": "FER",
     "mercedes": "MER",
     "alpine": "ALP",
     "mclaren": "MCL",
-    "TODO1": "KIK",
+    "sauber": "KIK",
     "aston_martin": "ASM",
     "haas": "HAS",
-    "TODO2": "VIS",
+    "rb": "VIS",
     "williams": "WIL",
 }
 
-# TODO new table for constructor: API_ID-CODE-FULLNAME
-
-
 def get_constructors_standings():
     url = f"{API}constructorStandings.json"
-    response = requests.get(url)
-    data = response.json()
+    retries = 5
+    while retries:
+        try:
+            response = requests.get(url)
+            data = response.json()
+            break
+        except:
+            retries -= 5
+            #import pdb; pdb.set_trace()
+            print("RETRYING LOAD CONSTR STDGS")
+    
+    
 
     standings = data["MRData"]["StandingsTable"]["StandingsLists"][0][
         "ConstructorStandings"
     ]
     to_db_items = []
     for item in standings:
-        position = item["position"]
         points = item["points"]
         team = CONSTRUCTOR_ID_CODE_MAP[item["Constructor"]["constructorId"]]
-        to_db_items.append({"position": position, "points": points, "team": team})
+        to_db_items.append({"position": None, "points": int(points), "team": team})
+
+    
+    for pos, item in enumerate(sorted(to_db_items, key=lambda d: d["points"], reverse=True), start=1):
+        item["position"] = pos
 
     return to_db_items
 
