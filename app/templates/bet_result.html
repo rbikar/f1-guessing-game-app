@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="box">
+    <h1 class="title">
+        Přehled tipů: {{data.race.race_name}}
+    </h1>
+    <table id="race_result" class="table is-bordered is-striped  is-hoverable" style="text-align:center"> 
+
+    </table>
+
+    <table id="table_bet" class="table is-bordered is-striped  is-hoverable" style="text-align:center"> 
+
+    </table>
+
+</div>
+<div class="box content is-medium">
+    <h2>Vysvětlivky: </h2>
+    <ul>
+        <li>
+            <ion-icon id="lock" name="lock-closed"></ion-icon> Tip je zadán, ale je momentálně uzamčen pro
+            ostatní uživatele. Tipy ostatních je možné vidět až po začátku akce.
+        </li>
+        <li>
+            <ion-icon id="noguess" name="alert-circle"></ion-icon> Tip není zadán, je třeba zadat před začátkem
+            akce. Zadávání tipů se automaticky uzamče po oficiálním začátku akce.
+        </li>
+    </ul>
+</div>
+
+
+
+<script>
+let dictionary = {
+    "USER": "Hráč",
+    "TOTAL": "Celkem",
+    "RACE_1": "Vítěz",
+    "RACE_2": "2. místo",
+    "RACE_3": "3. místo",
+    "QUALI": "Kvalifikace",
+    "SPRINT": "Sprint",
+    "SC": "Safety car",
+    "FASTEST": "Nejrychlejší kolo",
+    "BONUS": "Bonus",
+    "DRIVERDAY": "Driver of the Day",
+
+} 
+function generateTableHead(table, data) {
+    let thead = table.createTHead();
+    let row = thead.insertRow();
+    for (let key of data) {
+        let th = document.createElement("th");
+        let text = document.createTextNode(dictionary[key]);
+        th.appendChild(text);
+        row.appendChild(th);
+  }
+}
+
+
+
+function generateTable(table, data) {
+    for (let element of data) {
+
+        let row = table.insertRow();
+        for (key in element) {
+            let cell = row.insertCell();
+            let el
+            //console.log(element[key])
+            if (element[key] != null){
+                if(element[key] == "LOCKED"){
+                    el = document.createElement("ion-icon")
+                    el.name = "lock-closed"
+                    el.id = "lock"
+                }
+                else {
+                    el = document.createTextNode(element[key]);
+                }
+            }
+            else {
+                el = document.createElement("ion-icon")
+                el.name = "alert-circle"
+                el.id = "noguess"
+
+            }
+            
+            
+            cell.appendChild(el);
+        }
+  }
+}
+    
+
+
+
+race_results = {{ data.race | tojson | safe}}
+
+// HEAD
+// type:  QUALI 1. mistp 2. misto 3. misto safey car  ....
+// result:  VER     HAM 
+let race_results_data = Object()
+for (let elem of race_results.results){
+    race_results_data[elem.type] = elem.val
+
+}
+
+let table_race = document.querySelector("#race_result");
+
+generateTable(table_race, [race_results_data]);
+generateTableHead(table_race, Object.keys(race_results_data));
+
+users_results = {{ data.users | tojson | safe}}
+
+head = ["USER", "TOTAL"] 
+head = head.concat(Object.keys(race_results_data))
+let table_bet = document.querySelector("#table_bet");
+
+///console.log(users_results)
+let data_bets = Array()
+for (let elem of users_results){
+    let item = Object()
+    //console.log(elem)
+    item["username"] = elem.username
+    item["total"] = elem.total_points
+    for (let bet_type of  Object.keys(race_results_data)){
+        
+        let bet = elem.bets.find((el) => el.type == bet_type)
+        if (bet == null){
+            item[bet_type] = null;
+            continue;
+        }
+        if (bet.value != null){
+            if (bet.extra != null){
+                item[bet_type] = bet.value + " (" + bet.points + " b." + "🃏)" 
+            }
+            else {
+                if (bet.value != "LOCKED"){
+                    item[bet_type] = bet.value + " (" + bet.points + " b." + ")" 
+
+                }
+                else{
+                    item[bet_type] = bet.value 
+
+                }
+
+            }
+        }
+        else {
+            item[bet_type] = null
+        }
+    }
+
+
+    data_bets.push(item)
+    
+
+}
+generateTable(table_bet, data_bets);
+generateTableHead(table_bet, head);
+// Hrac Celkem Quali ...
+// bob 10      VER (1 b., joker)
+//
+</script>
+{% endblock %}

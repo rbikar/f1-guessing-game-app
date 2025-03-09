@@ -1,35 +1,47 @@
 {% extends "base.html" %}
-{% from "driver_select.html" import build_driver_select, build_safety_car, build_bonus, build_submit, build_cancel, build_lock %}
+{% from "driver_select.html" import build_driver_select, build_safety_car, build_bonus, build_submit, build_cancel, build_lock, build_joker_checkbox %}
 {% block content %} <div class="box">
     <h1 class="title">
-        {{race.name}}
+        {{data.race.name}} 
+        <div  class="fi fi-{{data.country_code}}"> </div>
+        <div id="clock">
+            <span id="date-time"></span>
+          </div>
+          <a href="{{ url_for('main.bet_result', external_circuit_id=data.race.ext_id) }}">Přehled tipů </a>
     </h1>
     <h2 class="subtitle restorelines">
-        {% if start_times.s_start %}
-        {{ build_lock("Sprint", start_times.s_start,  locks.sprint_date ) }} {% endif %}
-        {{ build_lock("Kvalifikace", start_times.q_start,  locks.qualification_date ) }} 
-        {{ build_lock("Závod", start_times.r_start,  locks.race_date ) }}
+        {% if data.start_times.s_start %}
+        {{ build_lock("Sprint", data.start_times.s_start,  data.locks.sprint ) }} {% endif %}
+        {{ build_lock("Kvalifikace", data.start_times.q_start,  data.locks.quali ) }} 
+        {{ build_lock("Závod", data.start_times.r_start,  data.locks.race ) }}
+        {{ build_lock("Driver of the Day", data.start_times.dod_end,  data.locks.dotd ) }}
     </h2>
 </div>
 <div class="box"> {% with messages = get_flashed_messages() %} {% if messages %} <div class="notification is-success">
         {{ messages[0] }}
-    </div> {% endif %} {% endwith %} <form method="POST" action="/race/{{race.external_circuit_id}}" id="race"  onsubmit='return validateFormRace();'>
-        {% if race_type == "SPRINT" %} <fieldset {%if  locks.sprint_date %} disabled {% endif %}
+    </div> {% endif %} {% endwith %} 
+    <form method="POST" action="/race/{{data.race.ext_id}}" id="race"  onsubmit='return validateFormRace();'>
+        {% if data.race.type == "SPRINT" %} 
+        <fieldset {%if  data.locks.sprint %} disabled {% endif %}
             style="margin: 15px; border: none; ">
-            {{ build_driver_select("Vítěz sprintu", "sprint", drivers, guess.sprint) }}
+            {{ build_driver_select("Vítěz sprintu", "sprint", data.drivers,  data.bet.sprint) }}
         </fieldset> {% endif %} 
-        <fieldset {%if  locks.qualification_date %} disabled {% endif %} style="margin: 15px; border: none; ">
-            {{ build_driver_select("Vítěz kvalifikace", "quali", drivers, guess.quali) }}
+        <fieldset {%if  data.locks.quali %} disabled {% endif %} style="margin: 15px; border: none; ">
+            {{ build_driver_select("Vítěz kvalifikace", "quali", data.drivers,  data.bet.quali) }}
         </fieldset> 
         
-        <fieldset {%if locks.race_date %} disabled {% endif %}
-            style="margin: 15px; border: none; ">
-            {{ build_driver_select("Vítěz závodu", "first", drivers, guess.first) }}
-            {{ build_driver_select("Druhé místo", "second", drivers, guess.second) }}
-            {{ build_driver_select("Třetí místo", "third", drivers, guess.third) }}
-            {{ build_driver_select("Nejrychlejší kolo", "fastest_lap", drivers, guess.fastest_lap) }}
-            {{ build_safety_car("Počet safety car", 15,  guess.safety_car) }}
-            {{ build_bonus(bonus.text, guess.bonus) }}
+        <fieldset {%if data.locks.race %} disabled {% endif %} style="margin: 15px; border: none; ">
+            {{ build_driver_select("Vítěz závodu", "first", data.drivers,  data.bet.race_1) }}
+            {{ build_driver_select("Druhé místo", "second", data.drivers,  data.bet.race_2) }}
+            {{ build_driver_select("Třetí místo", "third", data.drivers,  data.bet.race_3) }}
+            {{ build_driver_select("Nejrychlejší kolo", "fastest_lap", data.drivers, data.bet.fastest) }}
+            {{ build_safety_car("Počet safety car", 10, data.bet.sc) }}
+            {{ build_bonus(data.race.bonus_bet, data.bet.bonus) }}
+            {{ build_joker_checkbox("Joker", data.bet.joker, data.joker_stats.available, data.joker_stats.max)}}
+        </fieldset>
+        <fieldset {%if data.locks.dotd %} disabled {% endif %} style="margin: 15px; border: none; ">
+            {{ build_driver_select("Driver of the Day", "driver_of_the_day", data.drivers, data.bet.driverday) }}
+        
             {{ build_submit("Uložit") }}
             {{ build_cancel("Storno") }}
         </fieldset>
@@ -39,5 +51,5 @@
 </div>
 
 <script src="{{url_for('static', filename='validate_podium.js')}}"></script>
-
+<script src="{{url_for('static', filename='live_time.js')}}"></script>
 {% endblock %}

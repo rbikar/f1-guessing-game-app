@@ -9,3 +9,4 @@ pytz
 Flask-Migrate
 requests
 more-executors
+pycountry

@@ -8,8 +8,8 @@ from time import sleep
 
 LOG = logging.getLogger(__name__)
 
-API = "api/f1"
-
+API = "ergast/f1"
+YEAR = 2025
 
 REQUESTS_MAX_WORKERS = int(os.getenv("F1_ERGAST_REQUESTS_MAX_WORKERS", "4"))
 SLEEP_SECONDS = 2
@@ -54,27 +54,27 @@ class Client(object):
         return self._session.request(**kwargs)
 
     def get_current_schedule(self):
-        # https://ergast.com/api/f1/2024.json
-        endpoint = "2024"
+        # https://ergast.com/api/f1/{YEAR}.json
+        endpoint = f"{YEAR}"
         url = os.path.join(self._url, endpoint + ".json")
         LOG.debug("Getting all races for season %s", endpoint)
         return self._executor.submit(self._do_request, method="GET", url=url)
 
     def get_result(self, round, rank):
-        endpoint = f"2024/{round}/results/{rank}.json"
+        endpoint = f"{YEAR}/{round}/results/{rank}.json"
         url = os.path.join(self._url, endpoint)
         LOG.debug("Getting result for race, round %s: %s", round, endpoint)
 
         return self._executor.submit(self._do_request, method="GET", url=url)
 
     def get_q_result(self, round, rank):
-        endpoint = f"2024/{round}/qualifying/{rank}.json"
+        endpoint = f"{YEAR}/{round}/qualifying/{rank}.json"
         url = os.path.join(self._url, endpoint)
         LOG.debug("Getting result for Q, rank: %s, round %s: %s", round, rank, endpoint)
         return self._executor.submit(self._do_request, method="GET", url=url)
 
     def get_sprint_result(self, round, rank):
-        endpoint = f"2024/{round}/sprint/{rank}.json"
+        endpoint = f"{YEAR}/{round}/sprint/{rank}.json"
         url = os.path.join(self._url, endpoint)
         LOG.debug(
             "Getting result for sprint, rank: %s, round %s: %s", round, rank, endpoint
@@ -83,7 +83,7 @@ class Client(object):
         return self._executor.submit(self._do_request, method="GET", url=url)
 
     def get_fastest_lap(self, round, rank):
-        endpoint = f"2024/{round}/fastest/{rank}/results.json"
+        endpoint = f"{YEAR}/{round}/fastest/{rank}/results.json"
         url = os.path.join(self._url, endpoint)
         LOG.debug(
             "Getting result of fastest lap, rank: %s, round %s: %s",
@@ -92,4 +92,15 @@ class Client(object):
             endpoint,
         )
 
+        return self._executor.submit(self._do_request, method="GET", url=url)
+
+
+    def get_constructors(self):
+        endpoint = f"{YEAR}/constructors/"
+        url = os.path.join(self._url, endpoint)
+        return self._executor.submit(self._do_request, method="GET", url=url)
+    
+    def get_drivers(self):
+        endpoint = f"{YEAR}/drivers/"
+        url = os.path.join(self._url, endpoint)
         return self._executor.submit(self._do_request, method="GET", url=url)
