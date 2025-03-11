@@ -1,34 +1,52 @@
+from datetime import datetime
+from typing import Optional
+
 from flask_login import UserMixin
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app import db
-from datetime import datetime
 
 
 class User(UserMixin, db.Model):
     __tablename__ = "user"
 
-    id = db.Column(
-        db.Integer, primary_key=True
-    )  # primary keys are required by SQLAlchemy
-    password = db.Column(db.String(400))
-    username = db.Column(db.String(100), unique=True)
-    role = db.Column(db.String(100))
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(unique=True)
+    password: Mapped[str]
+    role: Mapped[Optional[str]]
+    email: Mapped[Optional[str]]
+
+    bets: Mapped[list["Bet"]] = relationship(back_populates="user")
+
+
+FIX_COUNTRY_MAP = {
+    "UAE": "AE",
+    "UK": "GB",
+}
 
 
 class Race(db.Model):
     __tablename__ = "race"
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50))
-    round = db.Column(db.Integer, unique=True)
-    country = db.Column(db.String(50))
-    circuit_name = db.Column(db.String(50))
-    external_circuit_id = db.Column(db.String(50))
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str]
+    round: Mapped[int] = mapped_column(unique=True)
+    country: Mapped[str]
+    circuit_name: Mapped[str]
+    ext_id: Mapped[str]
 
-    sprint_date = db.Column(db.TIMESTAMP(timezone=True))
-    qualification_date = db.Column(db.TIMESTAMP(timezone=True))
-    race_date = db.Column(db.TIMESTAMP(timezone=True))
-    # type = db.Column(db.String(100))
+    sprint_date: Mapped[Optional[datetime]]
+    quali_date: Mapped[datetime]
+    race_date: Mapped[datetime]
+    type: Mapped[str]  # NORMAL | SPRINT
+
+    bonus_bet: Mapped[Optional[str]]
+    bonus_bet_type: Mapped[Optional[str]]  # YES, free=form? uvidime, mozna v sezone
+
+    # raceresult_id: Mapped[int] = mapped_column(ForeignKey('raceresult.id'))
+    race_results: Mapped[list["RaceResult"]] = relationship()
+    bets: Mapped[list["Bet"]] = relationship()
 
     @classmethod
     def race_from_data(cls, data):
@@ -38,17 +56,18 @@ class Race(db.Model):
         if isinstance(data, list):
             return [cls.race_from_data(elem) for elem in data]
 
-        kwargs = {
+        kwargs = {  ### tytto kwatgs pripravit jinde a poslat rovnout spravny dict jako kwagrtsf pro Race(**kw)
             # basic data
             "name": data["raceName"],
             "round": int(data["round"]),
-            "country": data["Circuit"]["Location"]["country"],
+            "country": cls.fix_country(data["Circuit"]["Location"]["country"]),
             "circuit_name": data["Circuit"]["circuitName"],
-            "external_circuit_id": data["Circuit"]["circuitId"],
+            "ext_id": data["Circuit"]["circuitId"],
             # dates
             "sprint_date": cls.format_date(data.get("Sprint") or None),
-            "qualification_date": cls.format_date(data.get("Qualifying") or None),
+            "quali_date": cls.format_date(data.get("Qualifying") or None),
             "race_date": cls.format_date(data),
+            "type": "SPRINT" if data.get("Sprint") else "NORMAL",
         }
 
         return cls(**kwargs)
@@ -57,196 +76,131 @@ class Race(db.Model):
     def format_date(data):
         if data:
             time = data.get("time", [])[:-1] or "00:00:00"
-            return datetime.fromisoformat(
-                data["date"] + "T" + time
-            )  # should be UTC!
+            return datetime.fromisoformat(data["date"] + "T" + time)  # should be UTC!
         else:
             return None
+
+    @staticmethod
+    def fix_country(country):
+        return FIX_COUNTRY_MAP.get(country, country)
 
 
 class RaceResult(db.Model):
     __tablename__ = "raceresult"
 
-    id = db.Column(db.Integer, primary_key=True)
-    race_id = db.Column(db.Integer, db.ForeignKey("race.id"), unique=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
-    quali = db.Column(db.String(100))
-    sprint = db.Column(db.String(100))
-
-    first = db.Column(db.String(100))
-    second = db.Column(db.String(100))
-    third = db.Column(db.String(100))
-
-    fastest_lap = db.Column(db.String(100))
-    safety_car = db.Column(db.String(100))
-    bonus = db.Column(db.String(100))
-
-
-class RaceGuess(db.Model):
-    __tablename__ = "raceguess"
-
-    id = db.Column(
-        db.Integer, primary_key=True
-    )  # primary keys are required by SQLAlchemy
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
-
-    race_id = db.Column(db.Integer, db.ForeignKey("race.id"))
-
-    quali = db.Column(db.String(100))
-    sprint = db.Column(db.String(100))
-
-    first = db.Column(db.String(100))
-    second = db.Column(db.String(100))
-    third = db.Column(db.String(100))
-
-    fastest_lap = db.Column(db.String(100))
-    safety_car = db.Column(db.Integer)
-    bonus = db.Column(db.String(100))
-
-    bonus_ok = db.Column(db.Boolean)
-
-
-class SeasonGuess(db.Model):
-    __tablename__ = "seasonguess"
-
-    id = db.Column(
-        db.Integer, primary_key=True
-    )  # primary keys are required by SQLAlchemy
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
-
-    ###drivers
-    _1d = db.Column(db.String(100))
-    _2d = db.Column(db.String(100))
-    _3d = db.Column(db.String(100))
-    _4d = db.Column(db.String(100))
-    _5d = db.Column(db.String(100))
-    _6d = db.Column(db.String(100))
-    _7d = db.Column(db.String(100))
-    _8d = db.Column(db.String(100))
-    _9d = db.Column(db.String(100))
-    _10d = db.Column(db.String(100))
-    _11d = db.Column(db.String(100))
-    _12d = db.Column(db.String(100))
-    _13d = db.Column(db.String(100))
-    _14d = db.Column(db.String(100))
-    _15d = db.Column(db.String(100))
-    _16d = db.Column(db.String(100))
-    _17d = db.Column(db.String(100))
-    _18d = db.Column(db.String(100))
-    _19d = db.Column(db.String(100))
-    _20d = db.Column(db.String(100))
-    ### 20 jezdcu
-
-    ###constructors
-    #
-    _1c = db.Column(db.String(100))
-    _2c = db.Column(db.String(100))
-    _3c = db.Column(db.String(100))
-    _4c = db.Column(db.String(100))
-    _5c = db.Column(db.String(100))
-    _6c = db.Column(db.String(100))
-    _7c = db.Column(db.String(100))
-    _8c = db.Column(db.String(100))
-    _9c = db.Column(db.String(100))
-    _10c = db.Column(db.String(100))
-    ### 10 stsaji
-
-
-class Driver(db.Model):
-    __tablename__ = "driver"
-
-    id = db.Column(
-        db.Integer, primary_key=True
-    )  # primary keys are required by SQLAlchemy
-
-    driver_id = db.Column(db.String(100))
-    number = db.Column(db.String(100))
-    code = db.Column(db.String(100), unique=True)
-    season_active = db.Column(db.Boolean)
-
-    def serialize(self):
-        return {
-            "driver_id": self.driver_id,
-            "number": self.number,
-            "code": self.code,
-        }
-
-
-class Constructor(db.Model):
-    __tablename__ = "constructor"
-
-    id = db.Column(
-        db.Integer, primary_key=True
-    )  # primary keys are required by SQLAlchemy
-
-    constructorId = db.Column(db.String(100))
-    name = db.Column(db.String(100))
-    code = db.Column(db.String(100), unique=True)
-
-    def serialize(self):
-        return {
-            "team_id": self.constructorId,
-            "name": self.name,
-            "code": self.code,
-        }
-
-
-class BonusGuess(db.Model):
-    __tablename__ = "bonusguess"
-    id = db.Column(
-        db.Integer, primary_key=True
-    )  # primary keys are required by SQLAlchemy
-
-    text = db.Column(db.String(500))
-    type = db.Column(db.String(100))
-    race_id = db.Column(db.Integer, db.ForeignKey("race.id"))
-
-
-class Standings(db.Model):
-    __tablename__ = "standings"
-    id = db.Column(
-        db.Integer, primary_key=True
-    )  # primary keys are required by SQLAlchemy
-
-    position = db.Column(db.String(20))
-    type = db.Column(db.String(100))
-    name = db.Column(db.String(20), unique=True)
-    points = db.Column(db.String(20))
-
-
-class SeasonBet(db.Model):
-    __tablename__ = "season_bet"
-
-    id = db.Column(db.Integer, primary_key=True)
-    # driver/team code
-    value = db.Column(db.String(50))
-    rank = db.Column(db.Integer)
-
-    type = db.Column(db.String(50))  # DRIVER, TEAM
-    # FKs  user_id, race_id
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    type: Mapped[str]  # RACE, QUALI , SPRINT, FASTEST_LAP, SC, BONUS. DRIVER_OF_THE_DAY
+    rank: Mapped[Optional[int]]  # 1..N or null
+    competitor_id: Mapped[Optional[int]] = mapped_column(ForeignKey("competitor.id"))
+    value: Mapped[Optional[str]]  # for bonus
+    race_id: Mapped[int] = mapped_column(ForeignKey("race.id"))
 
     @classmethod
-    def from_data(cls, data, type=None):
-        if type:
-            data["type"] = type
+    def from_data(cls, data):
+        if isinstance(data, list):
+            return [cls.from_data(elem) for elem in data]
+
+        kwargs = {
+            "type": data["type"].upper(),
+            "rank": data["rank"],
+            "competitor_id": data.get("competitor_id"),
+            "value": data.get("value"),
+            "race_id": data["race_id"],
+        }
+
+        return cls(**kwargs)
+
+
+class Bet(db.Model):
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    type: Mapped[str]  # QUALIE |SPRINT|RACE, FL, SC, BONUS, DOD, SEASON!!!
+    rank: Mapped[Optional[int]]
+    value: Mapped[Optional[str]]  ### competitor or free for or number
+    result: Mapped[int] = mapped_column(default=0)
+    extra: Mapped[Optional[str]]  # JOKER
+
+    race_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("race.id")
+    )  ## NULLABLE NA SEASON TIP!!!!!!
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    user: Mapped["User"] = relationship(back_populates="bets")
+
+    @classmethod
+    def from_data(cls, data):
+        # if isinstance(data, dict):
+        #    return cls.from_data(data)
 
         if isinstance(data, list):
             return [cls.from_data(elem) for elem in data]
 
         kwargs = {
+            "type": data["type"].upper(),
+            "rank": data["rank"],
             "value": data["value"],
-            "rank": int(data["rank"]),
-            "type": type or data["type"],
+            "extra": data["extra"],
+            "race_id": data["race_id"],
             "user_id": data["user_id"],
         }
-        assert kwargs["type"] in ("TEAM", "DRIVER")
+
         return cls(**kwargs)
 
-    @staticmethod
-    def serialize(bets):
-        out = {"TEAM": {}, "DRIVER": {}}
-        for item in bets:
-            out.setdefault(item.type, {})[item.rank] = item.value
+    def __repr__(self):
+        return f"RACE: {self.race_id}, USER:{self.user.username}, TYPE: {self.type}"
 
-        return out
+
+class Competitor(db.Model):
+    __tablename__ = "competitor"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    ext_id: Mapped[str]
+    name: Mapped[str]
+    code: Mapped[str]
+    active: Mapped[bool] = mapped_column(default=True)
+    type: Mapped[str]  # DRIVER|TEAM
+    points: Mapped[int] = mapped_column(default=0)
+    position: Mapped[int] = mapped_column(default=0)
+    # def serialize?
+    race_results: Mapped[list["RaceResult"]] = relationship()
+
+    ### tyto dve metody zkusit deduplikovat
+    @classmethod
+    def drivers_from_data(cls, data):
+        if isinstance(data, dict) and "MRData" in data:
+            return cls.drivers_from_data(data["MRData"]["DriverTable"]["Drivers"])
+
+        if isinstance(data, list):
+            return [cls.drivers_from_data(elem) for elem in data]
+
+        kwargs = {  ### tytto kwatgs pripravit jinde a poslat rovnout spravny dict jako kwagrtsf pro Race(**kw)
+            # basic data
+            "name": f"{data['givenName']} {data['familyName']}",
+            "ext_id": data["driverId"],
+            "code": data["code"],
+            "type": "DRIVER",
+            "active": True,
+        }
+
+        return cls(**kwargs)
+
+    @classmethod
+    def teams_from_data(cls, data):
+        if isinstance(data, dict) and "MRData" in data:
+            return cls.teams_from_data(
+                data["MRData"]["ConstructorTable"]["Constructors"]
+            )
+
+        if isinstance(data, list):
+            return [cls.teams_from_data(elem) for elem in data]
+
+        kwargs = {  ### tytto kwatgs pripravit jinde a poslat rovnout spravny dict jako kwagrtsf pro Race(**kw)
+            # basic data
+            "name": data["name"],
+            "ext_id": data["constructorId"],
+            "code": "TO_UPDATE",
+            "type": "TEAM",
+            "active": True,
+        }
+
+        return cls(**kwargs)

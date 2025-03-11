@@ -34,13 +34,24 @@
 {% endmacro %}
 
 
+{% macro build_joker_checkbox(label, guess,  available, max) %}
+{{ form_item_start(label, false) }}
+<div class="checkbox">
+    
+    <input id="joker" name="joker" value="joker" type="checkbox" {% if guess %} checked {% endif %}
+    {% if not guess and available == 0 %} disabled {% endif %} }/>    
+    <label for="joker">Dvojnásobné body na nedělní tip! K dispozici {{available}}/{{max}}</label>
+</div>
+{{ form_item_end() }}
+{% endmacro %}
+
 {% macro build_safety_car(label, limit, guess) %}
 {{ form_item_start(label, false) }}
 <div class="select">
     <select id="safety_car" name="safety_car">
         <option value selected disabled hidden>---</option>
         {% for value in range(0, limit) %}
-        <option value={{value}} {% if value == guess %} selected {% endif %}>{{value}}</option>
+        <option value={{value}} {% if guess and value == guess | int %} selected {% endif %}>{{value}}</option>
         {% endfor %}
     </select>
 
@@ -80,11 +91,11 @@
 {% macro build_row(race, selected) %}
 
 <tr {% if selected %} class=is-selected {% endif %}>
-    <th><a href="{{ url_for('main.race', external_circuit_id=race.external_circuit_id) }}">{{race.name}}</td>
-    <td> {{race.q}} </td>
-    <td> {{race.s}} </td>
-    <td> {{race.r}} </td>
-
+    <th><a href="{{ url_for('main.race', external_circuit_id=race.external_circuit_id) }}">{{race.name}}</th>
+        <td> {{race.s}} </td>
+        <td> {{race.q}} </td>   
+        <td> {{race.r}} </td>
+        <td> <a href="{{ url_for('main.bet_result', external_circuit_id=race.external_circuit_id) }}">Přehled tipů </td>
 </tr>
 
 {% endmacro %}
