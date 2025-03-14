@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app import db
 
+import pytz
 
 class User(UserMixin, db.Model):
     __tablename__ = "user"
@@ -76,7 +77,7 @@ class Race(db.Model):
     def format_date(data):
         if data:
             time = data.get("time", [])[:-1] or "00:00:00"
-            return datetime.fromisoformat(data["date"] + "T" + time)  # should be UTC!
+            return datetime.fromisoformat(data["date"] + "T" + time).replace(tzinfo=pytz.utc)  # should be UTC!
         else:
             return None
 

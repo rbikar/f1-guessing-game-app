@@ -38,14 +38,18 @@ def get_current_race(races):
 
 
 def date_or_none(date, shift=None):
+    out = "TBC"
     if date is None:
-        return "TBC"
-    if shift:
-        date += shift
-    date = date.replace(tzinfo=pytz.utc)
-    date = date.astimezone(pytz.timezone("Europe/Prague"))
+        out = "TBC"
+    
+    else:
+        out = date.replace(tzinfo=pytz.utc)
 
-    return date.strftime("%d.%m. %H:%M")
+        if shift:
+            out += shift
+        out = out.astimezone(pytz.timezone("Europe/Prague"))   ### may do this only on fronend and handle only UTC in backend
+
+    return out.strftime("%d.%m. %H:%M")
 
 
 def get_locks_race(race):
