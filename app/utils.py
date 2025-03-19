@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta, UTC
-
+from .models import Race, Competitor
 import pytz
+from app import db
+from app.models import Bet, Competitor, Race, RaceResult, User
 
 LOCKS = {
     "quali": lambda race: race.quali_date,
@@ -19,7 +21,13 @@ BET_LOCK_MAP = {
 }
 
 
-def get_current_race(races):
+def _db_exec(stmt):
+    return db.session.execute(stmt)
+
+
+def get_current_race():
+    stmt = db.select(Race)
+    races = _db_exec(stmt).scalars().all()
     now = datetime.now(UTC)
     utc = now.replace(tzinfo=pytz.utc)
     # now = datetime(2023, 12, 4, 18, 00)
@@ -41,13 +49,15 @@ def date_or_none(date, shift=None):
     out = "TBC"
     if date is None:
         out = "TBC"
-    
+
     else:
         out = date.replace(tzinfo=pytz.utc)
 
         if shift:
             out += shift
-        out = out.astimezone(pytz.timezone("Europe/Prague"))   ### may do this only on fronend and handle only UTC in backend
+        out = out.astimezone(
+            pytz.timezone("Europe/Prague")
+        )  ### may do this only on fronend and handle only UTC in backend
 
     return out.strftime("%d.%m. %H:%M")
 
@@ -55,7 +65,7 @@ def date_or_none(date, shift=None):
 def get_locks_race(race):
     locks = {}
     now = datetime.now(UTC)
-    #now = datetime(2025, 3, 16, 4, 40, tzinfo=UTC)
+    # now = datetime(2025, 3, 16, 4, 40, tzinfo=UTC)
     utc_now = now.replace(tzinfo=pytz.utc)
     for lock, time_f in LOCKS.items():
         time = time_f(race)
@@ -91,3 +101,17 @@ def get_label_attr_season():
         constructors.append({"label": label, "attr": attr})
 
     return drivers, constructors
+
+
+def get_competitors_codes(type, active=True):
+    stmt = db.select(Competitor).where(Competitor.type == type)  # , Competitor.active
+    res = _db_exec(stmt)
+    codes = [item.code for item in res.scalars()]
+    return codes
+
+
+def get_competitors_names(type):
+    stmt = db.select(Competitor).where(Competitor.type == type)  # , Competitor.active
+    res = _db_exec(stmt)
+    names = [item.name for item in res.scalars()]
+    return names

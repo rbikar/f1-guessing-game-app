@@ -102,15 +102,21 @@ def load_races_to_db():
                     short_name=race["short_name"],
                     type=race["type"],
                     round=race["round"],
-                    quali_start=None
-                    if "TBC" == race["quali_start"]
-                    else datetime.fromisoformat(race["quali_start"]),
-                    sprint_start=None
-                    if "TBC" == race["sprint_start"]
-                    else datetime.fromisoformat(race["sprint_start"]),
-                    race_start=None
-                    if "TBC" == race["race_start"]
-                    else datetime.fromisoformat(race["race_start"]),
+                    quali_start=(
+                        None
+                        if "TBC" == race["quali_start"]
+                        else datetime.fromisoformat(race["quali_start"])
+                    ),
+                    sprint_start=(
+                        None
+                        if "TBC" == race["sprint_start"]
+                        else datetime.fromisoformat(race["sprint_start"])
+                    ),
+                    race_start=(
+                        None
+                        if "TBC" == race["race_start"]
+                        else datetime.fromisoformat(race["race_start"])
+                    ),
                     name=race["name"],
                 )
 
