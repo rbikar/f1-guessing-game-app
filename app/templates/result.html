@@ -1,24 +1,24 @@
 {% extends "base.html" %}
-{% from "driver_select.html" import  build_submit, build_safety_car, build_bonus %}
+{% from "driver_select.html" import  build_submit, build_safety_car, build_bonus, build_driver_select %}
 
 {% block content %}
 <div class="box">
     {% with messages = get_flashed_messages() %} {% if messages %} <div class="notification is-success">
         {{ messages[0] }}
     </div> {% endif %} {% endwith %} 
-<form method="POST" action="/result/{{race.external_circuit_id}}">
+<form method="POST" action="/result/{{race.ext_id}}">
 
 
 {{ build_safety_car("Počet safety car", 15,  None) }}
 {{ build_bonus("Bonus", None) }}    
-
+{{ build_driver_select("driver_of_the_day", "driver_of_the_day", drivers, None) }}
 {{ build_submit("LOAD") }}
 
 </form>
 </div>
 
 {% if loaded %}
-<a href="/result/{{race.external_circuit_id}}/evaluate"> VYHODNOTIT BONUSY</a>
+<a href="/result/{{race.ext_id}}/evaluate"> VYHODNOTIT BONUSY</a>
 {% endif%}
 
 {% endblock %}

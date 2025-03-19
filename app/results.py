@@ -32,7 +32,7 @@ def get_fastest_lap(client, round):
 
 
 def get_result_for_round(round, is_sprint=False):
-    with Client("https://ergast.com") as client:
+    with Client("https://api.jolpi.ca/") as client:
         quali = get_q_result(client, round)
         sleep(0.5)
         sprint = None
@@ -47,8 +47,7 @@ def get_result_for_round(round, is_sprint=False):
         for rank in [1, 2, 3]:
             podium.append(get_result(client, round, rank))
             sleep(0.5)
-
-    return {
+    out = {
         "quali": quali,
         "sprint": sprint,
         "fastest_lap": fastest_lap,
@@ -57,6 +56,10 @@ def get_result_for_round(round, is_sprint=False):
         "third": podium[2],
         "podium": podium,
     }
+
+    if is_sprint is False:
+        del out["sprint"]
+    return out
 
 
 def evaluate_result_for_user(result, guess):
@@ -118,10 +121,13 @@ def get_drivers_standings():
             continue
 
         to_db_items.append({"position": None, "points": int(points), "driver": driver})
-    for pos, item in enumerate(sorted(to_db_items, key=lambda d: d["points"], reverse=True), start=1):
+    for pos, item in enumerate(
+        sorted(to_db_items, key=lambda d: d["points"], reverse=True), start=1
+    ):
         item["position"] = pos
 
     return to_db_items
+
 
 CONSTRUCTOR_ID_CODE_MAP = {
     "red_bull": "REB",
@@ -136,6 +142,7 @@ CONSTRUCTOR_ID_CODE_MAP = {
     "williams": "WIL",
 }
 
+
 def get_constructors_standings():
     url = f"{API}constructorStandings.json"
     retries = 5
@@ -146,10 +153,8 @@ def get_constructors_standings():
             break
         except:
             retries -= 5
-            #import pdb; pdb.set_trace()
+            # import pdb; pdb.set_trace()
             print("RETRYING LOAD CONSTR STDGS")
-    
-    
 
     standings = data["MRData"]["StandingsTable"]["StandingsLists"][0][
         "ConstructorStandings"
@@ -160,8 +165,9 @@ def get_constructors_standings():
         team = CONSTRUCTOR_ID_CODE_MAP[item["Constructor"]["constructorId"]]
         to_db_items.append({"position": None, "points": int(points), "team": team})
 
-    
-    for pos, item in enumerate(sorted(to_db_items, key=lambda d: d["points"], reverse=True), start=1):
+    for pos, item in enumerate(
+        sorted(to_db_items, key=lambda d: d["points"], reverse=True), start=1
+    ):
         item["position"] = pos
 
     return to_db_items
@@ -189,7 +195,9 @@ def team_match_results(bet, results):
     for team, drivers in team_drivers_map.items():
         if bet:
             first_driver_bet = get_position_from_season_bet(drivers[0], bet)
-            first_driver_stdgs = get_position_for_driver_from_standings(drivers[0], results)
+            first_driver_stdgs = get_position_for_driver_from_standings(
+                drivers[0], results
+            )
             second_driver_bet = get_position_from_season_bet(drivers[1], bet)
             second_driver_stdgs = get_position_for_driver_from_standings(
                 drivers[1], results
@@ -203,7 +211,6 @@ def team_match_results(bet, results):
 
             hit = team_match_hit(first_better_bet, first_better_stdgs)
 
-        
             out[team] = {
                 "points": 1 if hit else 0,
                 "bet": {drivers[0]: first_better_bet, drivers[1]: not first_better_bet},
@@ -214,7 +221,7 @@ def team_match_results(bet, results):
             }
         else:
             continue
-            #out[team] = {"points": 0, "bet": {}, "stdgs": {}}
+            # out[team] = {"points": 0, "bet": {}, "stdgs": {}}
     return out
 
 

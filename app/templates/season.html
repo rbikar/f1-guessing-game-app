@@ -39,7 +39,7 @@
 
                 <option value="NOSELECT" selected disabled hidden>---</option>
                 {% for item in data.drivers %}
-                <option value="{{item.code}}" id="DRIVER_{{rank}}">{{ item.code }}</option>
+                <option value="{{item}}" id="DRIVER_{{rank}}">{{ item }}</option>
                 {% endfor %}
 
               </select>
@@ -75,7 +75,7 @@
 
                 <option value="NOSELECT" selected disabled hidden>---</option>
                 {% for item in data.teams %}
-                <option value="{{item.code}}" id="team_{{rank}}">{{ item.code }}</option>
+                <option value="{{item}}" id="team_{{rank}}">{{ item }}</option>
                 {% endfor %}
 
               </select>
@@ -119,7 +119,7 @@
 function set_select_onload(type, range){
 //  console.log(available[type])//
 //console.log(selected[type])
-  bet = {{ data.bet | tojson | safe }}
+  bet = {{ data.bets | tojson | safe }}
   //console.log(bet)
   for (let i = 1; i < range; i++) {
     select = document.getElementById('select_' + type +'_' + i);
@@ -159,7 +159,7 @@ function set_select_onload(type, range){
 }
 
 function select_f(o, type) {  
-console.log("SELECT")
+//console.log("SELECT")
 //console.log(o.value)
 //console.log(o.name)
 
@@ -257,18 +257,22 @@ function fix_options(type){
 
 
   //const btn = document.querySelector('#btn');  
-  ///console.log({{data | tojson }})
+  //console.log({{data | tojson }})
   //console.log({{ data.drivers | tojson }})
   let drivers = Array.from({{ data.drivers | tojson | safe }})
   let teams = Array.from({{ data.teams | tojson | safe }})
 
   let available_drivers = new Set([])
   for (let d of drivers) {
-    available_drivers.add(d.code)
+    //console.log(d)
+    available_drivers.add(d)
   }
+  //console.log(available_drivers)
   let available_teams = new Set([])
+  let i = 0
   for (let t of teams) {
-    available_teams.add(t.code)
+    available_teams.add(t + i)
+    i++;
   }
   let selected_drivers = new Set([])
   let selected_teams = new Set([])

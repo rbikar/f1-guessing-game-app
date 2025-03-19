@@ -2,6 +2,7 @@
 
 {% block content %}
 <div class="box content is-medium" style="overflow-x:auto;">
+  <h2>Jezdci</h2>
 
 <table id="drivers" class="table is-bordered is-striped  is-hoverable">
 
@@ -10,6 +11,7 @@
 </div> 
 
 <div class="box content is-medium">
+  <h2>Konstruktéři</h2>
 
     <table id="teams" class="table is-bordered is-striped  is-hoverable">
     
@@ -17,7 +19,6 @@
     </table>
 </div> 
 <div class="box content is-medium">
-
   <table id="team_match" class="table is-bordered is-striped  is-hoverable">
   
   
@@ -26,128 +27,138 @@
 
 <script>
 
-function generateTableHead(table, data, type, sums) {
-  let thead = table.createTHead();
-  let row = thead.insertRow();
-  let th = document.createElement("th");
-  let text = document.createTextNode(type);
-  th.colSpan = 2
-  th.appendChild(text);
-  row.appendChild(th);
 
-  for (let key of data) {
-    let th = document.createElement("th");
-    let text = document.createTextNode(key + " (" + sums[key] + " b.)")// + data.key.total);
-    th.colSpan = 2
-    th.style.textAlign = "center"
-    th.appendChild(text);
-    row.appendChild(th);
+function generateTableHead(table, data) {
+    let thead = table.createTHead();
+    let row = thead.insertRow();
+    for (let key of data) {
+        let th = document.createElement("th");
+        let text = document.createTextNode(key); // moznot pouzit dictoipnnary]key]
+        th.appendChild(text);
+        row.appendChild(th);
   }
 }
 
-function generateTable(table, data, range, results) {
 
-   for (let i=1; i<range; i++){
-    let row = table.insertRow();
-    let cell = row.insertCell();
-    let text = document.createTextNode(i);
-    cell.appendChild(text);
 
-    let cell_result = row.insertCell();
-    let text_result = document.createTextNode(results[i]); //do kurzivy
-    cell_result.style.fontStyle = "italic";
-    cell_result.appendChild(text_result);
+function generateTable(table, data) {
+    for (let element of data) {
 
-    for (const [key, item] of Object.entries(data)){
-        console.log(key)
-        console.log(item)
-        console.log(item[i]);
-        let cell = row.insertCell();
-        let cell_points = row.insertCell();
-        if (item[i] == "LOCKED"){
-            const icon = document.createElement("ion-icon")
-            icon.name = "lock-closed"
-            icon.id = "lock"
-            cell.appendChild(icon)
-        }//udelat jeste locked
-        else if (item[i]){
-            let text = document.createTextNode(item[i].bet);
-            cell.appendChild(text);
+        let row = table.insertRow();
+        for (key in element) {
+            let cell = row.insertCell();
+            let el
+            //console.log(element[key])
+            if (element[key] != null){
+                if(element[key] == "LOCKED"){
+                    el = document.createElement("ion-icon")
+                    el.name = "lock-closed"
+                    el.id = "lock"
+                }
+                else {
+                    el = document.createTextNode(element[key]);
+                }
+            }
+            else {
+                el = document.createElement("ion-icon")
+                el.name = "alert-circle"
+                el.id = "noguess"
 
-            text = document.createTextNode(item[i].points);
-            cell_points.appendChild(text);
-
+            }
+            
+            cell.appendChild(el);
         }
-        else
-        {
-            const icon = document.createElement("ion-icon")
-            icon.name = "alert-circle"
-            icon.id = "noguess"
-            cell.appendChild(icon)
+  }
+}
+    
+season_results_drivers = {{ data.season.drivers | tojson | safe}}
+season_results_teams = {{ data.season.teams | tojson | safe}}
 
+users_results = {{ data.users | tojson | safe}}
+
+let season_results_drivers_data = Object()
+for (let elem of season_results_drivers){
+  season_results_drivers_data[elem.type] = elem.value
+
+}
+let season_results_teams_data = Object()
+for (let elem of season_results_teams){
+  season_results_teams_data[elem.type] = elem.value
+
+}
+
+//console.log(season_results_teams_data)
+//console.log(users_results)
+
+let head_drivers = ["Hráč", "Body", "Mistr", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
+let head_teams = ["Hráč", "Body", "Mistr", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
+
+let table_drivers = document.querySelector("#drivers");
+let table_teams = document.querySelector("#teams");
+
+function parse_data(data, bet_types) {
+  let data_bets = Array()
+  for (let elem of data){
+    let item = Object()
+    //console.log(elem)
+    item["username"] = elem.username
+    item["total"] = elem.total_points
+    for (let bet_type of  bet_types ){
+        
+        let bet = elem.bets.find((el) => el.type == bet_type)
+        if (bet == null){
+            item[bet_type] = null;
+            continue;
+        }
+        if (bet.value != null){
+            if (bet.extra != null){
+                item[bet_type] = bet.value// + " (" + bet.points + " b." + "🃏)" 
+            }
+            else {
+                if (bet.value != "LOCKED"){
+                    item[bet_type] = bet.value// + " (" + bet.points + " b." + ")" 
+
+                }
+                else{
+                    item[bet_type] = bet.value 
+
+                }
+
+            }
+        }
+        else {
+            item[bet_type] = null
         }
     }
-}
+    data_bets.push(item)
   
 }
 
-function generateTableTeamMatch(table, data, range, results) {
 
-for (const [key, item] of Object.entries(results)){
- let row = table.insertRow();
- let cell = row.insertCell();
- let text = document.createTextNode(key);
- cell.appendChild(text);
 
- let cell_result = row.insertCell();
- let text_result = document.createTextNode(results[key]); //do kurzivy
- cell_result.style.fontStyle = "italic";
- cell_result.appendChild(text_result);
-
- for (const [key_data, item] of Object.entries(data)){
-        console.log(key_data)
-        console.log(item)
-
-        let cell = row.insertCell();
-        let cell_points = row.insertCell();
-        let text = document.createTextNode(item[key].bet);
-        cell.appendChild(text);
-
-        text = document.createTextNode(item[key].points);
-        cell_points.appendChild(text);
-
-  }
-
+  return data_bets
 }
 
-}
 
-drivers_data = {{ data.DRIVER | tojson | safe}}
-teamsdata = {{ data.TEAM | tojson | safe}}
-
-drivers_result = {{ data.DRIVER_RESULT | tojson | safe}}
-teams_result = {{ data.TEAM_RESULT | tojson | safe}}
-
-team_match_data = {{ data.TEAM_MATCH | tojson | safe}}
-team_match_results =  {{ data.TEAM_MATCH_RESULT | tojson | safe}}
-
-sums = {{ data.SUMS | tojson | safe}}
-console.log(sums)
-console.log(sums.DRIVER)
-console.log(drivers_data)
-head_data = Object.keys(drivers_data);
-let table_drivers = document.querySelector("#drivers");
-generateTable(table_drivers, drivers_data, 21, drivers_result);
-generateTableHead(table_drivers, head_data, "JEZDCI", sums.DRIVER);
-
-let table_teams = document.querySelector("#teams");
-generateTable(table_teams, teamsdata, 11, teams_result);
-generateTableHead(table_teams, head_data, "KONSTRUKTÉŘI", sums.TEAM);
+let table_data_drivers = parse_data(users_results,  Object.keys(season_results_drivers_data))
+generateTable(table_drivers, table_data_drivers);
+generateTableHead(table_drivers, head_drivers);
 
 
-let table_teammatch = document.querySelector("#team_match");
-generateTableTeamMatch(table_teammatch, team_match_data, 11, team_match_results);
-generateTableHead(table_teammatch, head_data, "TÝMOVÝ SOUBOJ", sums.TEAM_MATCH);
+
+let table_data_teams = parse_data(users_results,  Object.keys(season_results_teams_data))
+generateTable(table_teams, table_data_teams);
+generateTableHead(table_teams, head_teams);
+
+
+//let table_teams = document.querySelector("#teams");
+//generateTable(table_teams, teamsdata, 11, teams_result);
+//generateTableHead(table_teams, head, "KONSTRUKTÉŘI", sums.TEAM);
+
+
+//let table_teammatch = document.querySelector("#team_match");
+//generateTableTeamMatch(table_teammatch, team_match_data, 11, team_match_results);
+//generateTableHead(table_teammatch, head_data, "TÝMOVÝ SOUBOJ", sums.TEAM_MATCH);
 
 </script>
 {% endblock %}

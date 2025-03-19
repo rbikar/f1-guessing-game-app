@@ -9,6 +9,7 @@ from app import db
 
 import pytz
 
+
 class User(UserMixin, db.Model):
     __tablename__ = "user"
 
@@ -77,7 +78,9 @@ class Race(db.Model):
     def format_date(data):
         if data:
             time = data.get("time", [])[:-1] or "00:00:00"
-            return datetime.fromisoformat(data["date"] + "T" + time).replace(tzinfo=pytz.utc)  # should be UTC!
+            return datetime.fromisoformat(data["date"] + "T" + time).replace(
+                tzinfo=pytz.utc
+            )  # should be UTC!
         else:
             return None
 
@@ -86,7 +89,7 @@ class Race(db.Model):
         return FIX_COUNTRY_MAP.get(country, country)
 
 
-class RaceResult(db.Model):
+class RaceResult(db.Model):  ### pkey vice hodnot
     __tablename__ = "raceresult"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -116,10 +119,12 @@ class RaceResult(db.Model):
 class Bet(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
 
-    type: Mapped[str]  # QUALIE |SPRINT|RACE, FL, SC, BONUS, DOD, SEASON!!!
+    type: Mapped[
+        str
+    ]  # QUALIE |SPRINT|RACE, FL, SC, BONUS, DOD, SEASON -> SEASON_DRIVER . SEASON_TEAM
     rank: Mapped[Optional[int]]
     value: Mapped[Optional[str]]  ### competitor or free for or number
-    result: Mapped[int] = mapped_column(default=0)
+    result: Mapped[float] = mapped_column(default=0.0)
     extra: Mapped[Optional[str]]  # JOKER
 
     race_id: Mapped[Optional[int]] = mapped_column(
@@ -140,8 +145,8 @@ class Bet(db.Model):
             "type": data["type"].upper(),
             "rank": data["rank"],
             "value": data["value"],
-            "extra": data["extra"],
-            "race_id": data["race_id"],
+            "extra": data.get("extra") or None,
+            "race_id": data.get("race_id") or None,
             "user_id": data["user_id"],
         }
 
