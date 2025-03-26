@@ -48,16 +48,15 @@ def get_current_race():
 def date_or_none(date, shift=None):
     out = "TBC"
     if date is None:
-        out = "TBC"
+        return "TBC"
 
     else:
         out = date.replace(tzinfo=pytz.utc)
-
         if shift:
             out += shift
         out = out.astimezone(
             pytz.timezone("Europe/Prague")
-        )  ### may do this only on fronend and handle only UTC in backend
+        )  ### may do this only on frontend and handle only UTC in backend
 
     return out.strftime("%d.%m. %H:%M")
 
