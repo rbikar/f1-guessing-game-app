@@ -1,8 +1,11 @@
 from time import sleep
 from .ergast_client.client import Client
+from app import db
+
 import requests
 
 API = "https://ergast.com/api/f1/2024/"
+SUNDAY_TYPES = ("RACE", "SC", "FASTEST", "BONUS", "DRIVERDAY")
 
 
 def get_result(client, round, rank):
@@ -293,3 +296,31 @@ def season_result(bet, results_map, std_type=None):
             }
 
     return result_to_display
+
+
+def eval_bet(bet, results):
+    bet_result = 0
+    if bet is None or bet.value is None:
+        return
+    if bet.type == "RACE":
+        key = f"{bet.type}_{bet.rank}"
+        keys = []  # podium keys
+        for k in {1, 2, 3} - {bet.rank}:
+            keys.append(f"{bet.type}_{k}")
+
+        if bet.value == results[key].value:
+            if bet.rank == 1:  # vitez zavodu
+                bet_result = 2
+            else:
+                bet_result = 1
+        elif bet.value == results[keys[0]].value or bet.value == results[keys[1]].value:
+            bet_result = 0.5
+    else:
+        if bet.value == results[bet.type].value:
+            bet_result = 1
+    # apply joker for sunday bets
+    if bet.type in SUNDAY_TYPES:
+        if bet.extra and bet.extra == "JOKER":
+            bet_result *= 2
+
+    return bet_result

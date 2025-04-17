@@ -17,6 +17,8 @@ from .results import (
     make_results_map,
     season_result,
     team_match_results,
+    eval_bet,
+    SUNDAY_TYPES,
 )
 from .utils import (
     date_or_none,
@@ -32,7 +34,6 @@ from .utils import (
 MESSAGES = {
     "BET_SAVED": "Tip v pořádku uložen",
 }
-SUNDAY_TYPES = ("RACE", "SC", "FASTEST", "BONUS", "DRIVERDAY")
 
 KEY_TYPE_RANK_MAP = {
     "quali": ("QUALI", None),
@@ -651,34 +652,12 @@ def evaluate_result_post(external_circuit_id):
                 )
                 bet = _db_exec(stmt).scalar()
 
-                eval_bet(bet, race_result_map)
+                bet.result = eval_bet(bet, race_result_map)
+                db.session.commit()
 
     return render_template(
         "evaluate.html", race=race, thead=thead, rows=rows, bonus_table=bonus_table
     )
-
-
-def eval_bet(bet, results):
-    if bet is None or bet.value is None:
-        return
-    if bet.type == "RACE":
-        key = f"{bet.type}_{bet.rank}"
-        keys = []  # podium keys
-        for k in {1, 2, 3} - {bet.rank}:
-            keys.append(f"{bet.type}_{k}")
-
-        if bet.value == results[key].value:
-            if bet.rank == 1:  # vityez zavodu
-                bet.result = 2
-            else:
-                bet.result = 1
-        elif bet.value == results[keys[0]].value or bet.value == results[keys[1]].value:
-            bet.result = 0.5
-    else:
-        if bet.value == results[bet.type].value:
-            bet.result = 1
-
-    db.session.commit()
 
 
 @main.route("/result/<string:external_circuit_id>", methods=["GET", "POST"])
