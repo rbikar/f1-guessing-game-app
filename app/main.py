@@ -870,15 +870,43 @@ def bet_overview():
 @main.route("/top_players")
 @login_required
 def top_players():
-    # TODO 2025
-    return render_template("wip.html")
-    total = defaultdict(float)
-    out = []
-    bet_user = db.session.query(RaceGuess, User).join(User).all()
-    race_result_map = {
-        race.id: result
-        for race, result in db.session.query(Race, RaceResult).join(RaceResult).all()
+    # TODO 2025 (season)
+    """
+    {
+    [
+    "username": "XXX",
+    "points": 123,
+    "order": 1 - should be ordered ideally
+
+    ]
     }
+
+    """
+    stmt = select(Bet).where(Bet.type != "SEASON_DRIVER" or Bet.type != "SEASON_TEAM")
+    # improvement: do sum and group by user on db side
+    all_bets = _db_exec(stmt).scalars().all()
+
+    user_result_map = {}
+    for bet in all_bets:
+        user_result_map.setdefault(
+            bet.user.username,
+            {
+                "username": bet.user.username,
+                "points": 0,
+                "order": 0,
+            },
+        )
+
+        user_result_map[bet.user.username]["points"] += bet.result
+
+    user_result = sorted(
+        user_result_map.values(), key=lambda item: item["points"], reverse=True
+    )
+
+    return render_template(
+        "current_top_players.html",
+        data=user_result,
+    )
 
     sums_for_users = defaultdict(float)  # map user: points
     for bet, user in bet_user:

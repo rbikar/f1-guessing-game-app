@@ -4,11 +4,12 @@
     <h1 class="title">
         Aktuální pořadí - závody
     </h1>
-    <table id="races" class="table is-bordered is-striped  is-hoverable" style="text-align:center"> 
+    <table id="race_bet_result" class="table is-bordered is-striped  is-hoverable" style="text-align:center"> 
 
     </table>
 
 </div>
+<!--
 <div class="box">
   <h1 class="title">
       Aktuální pořadí - sezona
@@ -27,69 +28,94 @@
   </table>
 
 </div>
-
+-->
 <script>
 
-    function generateTableHead(table, data, type) {
-      let thead = table.createTHead();
-      let row = thead.insertRow();
-      let th = document.createElement("th");
-        let text = document.createTextNode(type);
-        th.appendChild(text);
-        row.appendChild(th);
-      
-    
-      for (let key of data) {
+
+
+function generateTableHead(table, data) {
+    let thead = table.createTHead();
+    let row = thead.insertRow();
+    for (let key of data) {
         let th = document.createElement("th");
-        let text = document.createTextNode(key);
+        let text = document.createTextNode(key); // moznot pouzit dictoipnnary]key]
         th.appendChild(text);
         row.appendChild(th);
-      }
-    }
-    
-    function generateTable(table, data, range) {
-      let i = 1 
-      for (item of data){
+  }
+}
+
+
+
+function generateTable(table, data) {
+    for (let element of data) {
+        console.log(element)
         let row = table.insertRow();
-        let cell = row.insertCell();
-        let bold_el = document.createElement("B");
-        let text = document.createTextNode(i + ".");
-        bold_el.appendChild(text);
-        cell.appendChild(bold_el)
+        for (key in element) {
+            let cell = row.insertCell();
+            let el
+            console.log(element[key])
+            if (element[key] != null){
+                if(element[key] == "LOCKED"){
+                    el = document.createElement("ion-icon")
+                    el.name = "lock-closed"
+                    el.id = "lock"
+                }
+                else {
+                    el = document.createTextNode(element[key]);
+                }
+            }
+            else {
+                el = document.createElement("ion-icon")
+                el.name = "alert-circle"
+                el.id = "noguess"
 
-        cell = row.insertCell();
-        text = document.createTextNode(item.user);
-        cell.appendChild(text);
-
-        cell = row.insertCell();
-        text = document.createTextNode(item.points);
-        cell.appendChild(text);
-        i++;
-       }
-    }
-    standings_races = {{ data.RACE | tojson | safe}}
-
-    standings_season = {{ data.SEASON | tojson | safe}}
-
-    standings_full = {{ data.FULL | tojson | safe}}
-
+            }
+            
+            cell.appendChild(el);
+        }
+  }
+}
     
-    console.log(standings_races)
-    head_data = ["Hráč", "Počet Bodů"]
-    let table_races = document.querySelector("#races");
-    
-    generateTable(table_races, standings_races, standings_races.length);
-    generateTableHead(table_races, head_data, "Pořadí");
+data_race_bet_raw = {{ data | tojson | safe}}
 
-    let table_season = document.querySelector("#season");
-    
-    generateTable(table_season, standings_season, standings_season.length);
-    generateTableHead(table_season, head_data, "Pořadí");
+let data_race_bet = Object()
+for (let elem of data_race_bet_raw){
+  data_race_bet[elem.username] = elem
 
-    let table_full = document.querySelector("#full");
-    
-    generateTable(table_full, standings_full, standings_full.length);
-    generateTableHead(table_full, head_data, "Pořadí");
+}
+
+console.log(data_race_bet_raw)
+console.log(data_race_bet)
+
+let head = ["Pořadí", "Hráč", "Body"]
+
+let table_race_bet = document.querySelector("#race_bet_result");
+
+function parse_data(data, bet_types) {
+  let i = 1
+  let data_bets = Array()
+  for (let elem of data){
+    let item = Object()
+    //console.log(elem)
+    item["order"] = i
+    item["username"] = elem.username
+    item["total"] = elem.points
+    data_bets.push(item)
+    i++
+}
+
+
+
+  return data_bets
+}
+
+
+let table_data_race_bet = parse_data(data_race_bet_raw,  Object.keys(data_race_bet))
+
+console.log(table_data_race_bet)
+generateTable(table_race_bet, table_data_race_bet);
+generateTableHead(table_race_bet, head);
+
 
     </script>
 {% endblock %}
