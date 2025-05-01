@@ -634,6 +634,8 @@ def evaluate_result_post(external_circuit_id):
 
             if bet and bonus_ok:
                 bet.result = 2
+                if bet.extra and bet.extra == "JOKER": 
+                    bet.result *= 2
                 db.session.commit()
 
             for type_rank in KEY_TYPE_RANK_MAP.values():
