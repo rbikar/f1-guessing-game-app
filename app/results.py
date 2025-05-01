@@ -301,7 +301,7 @@ def season_result(bet, results_map, std_type=None):
 def eval_bet(bet, results):
     bet_result = 0
     if bet is None or bet.value is None:
-        return
+        return bet_result
     if bet.type == "RACE":
         key = f"{bet.type}_{bet.rank}"
         keys = []  # podium keys
