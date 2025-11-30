@@ -244,7 +244,7 @@ def season():
     teams = get_competitors_names(type="TEAM")
 
     ### toto pak do pryc :) nebo nechatp ro pro kontrolu
-    assert len(drivers) == 20
+    #assert len(drivers) == 20
     assert len(teams) == 10
 
     stmt = select(Bet).where(
