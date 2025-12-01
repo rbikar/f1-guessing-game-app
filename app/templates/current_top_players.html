@@ -9,7 +9,7 @@
     </table>
 
 </div>
-<!--
+
 <div class="box">
   <h1 class="title">
       Aktuální pořadí - sezona
@@ -28,7 +28,7 @@
   </table>
 
 </div>
--->
+
 <script>
 
 
@@ -76,7 +76,9 @@ function generateTable(table, data) {
   }
 }
     
-data_race_bet_raw = {{ data | tojson | safe}}
+data_race_bet_raw = {{ data.RACES | tojson | safe}}
+data_season_bet_raw = {{ data.SEASON | tojson | safe}}
+data_total_raw = {{ data.TOTAL | tojson | safe}}
 
 let data_race_bet = Object()
 for (let elem of data_race_bet_raw){
@@ -84,13 +86,26 @@ for (let elem of data_race_bet_raw){
 
 }
 
-console.log(data_race_bet_raw)
-console.log(data_race_bet)
+let data_season_bet = Object()
+for (let elem of data_season_bet_raw){
+  data_season_bet[elem.username] = elem
+
+}
+
+let data_total = Object()
+for (let elem of data_total_raw){
+  data_total[elem.username] = elem
+
+}
+
+//console.log(data_race_bet_raw)
+//console.log(data_race_bet)
 
 let head = ["Pořadí", "Hráč", "Body"]
 
 let table_race_bet = document.querySelector("#race_bet_result");
-
+let table_season_bet = document.querySelector("#season");
+let table_total = document.querySelector("#full");
 function parse_data(data, bet_types) {
   let i = 1
   let data_bets = Array()
@@ -112,10 +127,22 @@ function parse_data(data, bet_types) {
 
 let table_data_race_bet = parse_data(data_race_bet_raw,  Object.keys(data_race_bet))
 
-console.log(table_data_race_bet)
+//console.log(table_data_race_bet)
 generateTable(table_race_bet, table_data_race_bet);
 generateTableHead(table_race_bet, head);
 
+
+let table_data_season_bet = parse_data(data_season_bet_raw,  Object.keys(data_season_bet))
+
+//console.log(table_data_season_bet)
+generateTable(table_season_bet, table_data_season_bet);
+generateTableHead(table_season_bet, head);
+
+let table_data_total = parse_data(data_total_raw,  Object.keys(data_total))
+
+//console.log(table_data_total)
+generateTable(table_total, table_data_total);
+generateTableHead(table_total, head);
 
     </script>
 {% endblock %}

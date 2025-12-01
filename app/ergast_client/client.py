@@ -103,3 +103,13 @@ class Client(object):
         endpoint = f"{YEAR}/drivers/"
         url = os.path.join(self._url, endpoint)
         return self._executor.submit(self._do_request, method="GET", url=url)
+
+    def get_driver_standings(self):
+        endpoint = f"{YEAR}/driverstandings/"
+        url = os.path.join(self._url, endpoint)
+        return self._executor.submit(self._do_request, method="GET", url=url)
+
+    def get_constructor_standings(self):
+        endpoint = f"{YEAR}/constructorstandings/"
+        url = os.path.join(self._url, endpoint)
+        return self._executor.submit(self._do_request, method="GET", url=url)

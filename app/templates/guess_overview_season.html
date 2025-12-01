@@ -3,7 +3,7 @@
 {% block content %}
 <div class="box content is-small">
   <h2>Jezdci</h2>
-
+  <table id="drivers_result" class="table is-bordered is-striped  is-hoverable">
 <table id="drivers" class="table is-bordered is-striped  is-hoverable">
 
 
@@ -12,14 +12,15 @@
 
 <div class="box content is-small">
   <h2>Konstruktéři</h2>
-
+  <table id="teams_result" class="table is-bordered is-striped  is-hoverable">
     <table id="teams" class="table is-bordered is-striped  is-hoverable">
     
     
     </table>
 </div> 
-<div class="box content is-medium">
-  <table id="team_match" class="table is-bordered is-striped  is-hoverable">
+<div class="box content is-small">
+  <table id="match_result" class="table is-bordered is-striped  is-hoverable">
+  <table id="match" class="table is-bordered is-striped  is-hoverable">
   
   
   </table>
@@ -90,19 +91,42 @@ for (let elem of season_results_teams){
 //console.log(season_results_teams_data)
 //console.log(users_results)
 
+let teams_drivers =  {
+    "MER": ["ANT", "RUS"],
+    "REB": ["VER", "TSU"],
+    "FER": ["LEC", "HAM"],
+    "MCL": ["NOR", "PIA"],
+    "ALP": ["GAS", "DOO"],
+    "KIK": ["HUL", "BOR"],
+    "RBS": ["LAW", "HAD"],
+    "HAS": ["OCO", "BEA"],
+    "WIL": ["SAI", "ALB"],
+    "ASM": ["ALO", "STR"],
+}
+
 let head_drivers = ["Hráč", "Body", "Mistr", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
+let head_drivers_res = ["Mistr", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
+
 let head_teams = ["Hráč", "Body", "Mistr", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
+let head_teams_res = ["Mistr", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
 
+
+let head_match = ["Hráč", "Body", ...Object.keys(teams_drivers)]
+let head_match_res = [...Object.keys(teams_drivers)]
 let table_drivers = document.querySelector("#drivers");
+let table_drivers_result = document.querySelector("#drivers_result");
 let table_teams = document.querySelector("#teams");
+let table_teams_result = document.querySelector("#teams_result");
+let table_match = document.querySelector("#match");
+let table_match_result = document.querySelector("#match_result");
 
-function parse_data(data, bet_types) {
+function parse_data(data, bet_types, total_elem) {
   let data_bets = Array()
   for (let elem of data){
     let item = Object()
     //console.log(elem)
     item["username"] = elem.username
-    item["total"] = elem.total_points
+    item["total"] = elem[total_elem]
     for (let bet_type of  bet_types ){
         
         let bet = elem.bets.find((el) => el.type == bet_type)
@@ -112,11 +136,11 @@ function parse_data(data, bet_types) {
         }
         if (bet.value != null){
             if (bet.extra != null){
-                item[bet_type] = bet.value// + " (" + bet.points + " b." + "🃏)" 
+                item[bet_type] = bet.value + " (" + bet.points + " b.)" 
             }
             else {
                 if (bet.value != "LOCKED"){
-                    item[bet_type] = bet.value// + " (" + bet.points + " b." + ")" 
+                    item[bet_type] = bet.value + ":" + bet.points + "b." 
 
                 }
                 else{
@@ -135,28 +159,109 @@ function parse_data(data, bet_types) {
 }
 
 
-
+ // console.log(data_bets)
   return data_bets
 }
 
 
-let table_data_drivers = parse_data(users_results,  Object.keys(season_results_drivers_data))
+let table_data_drivers = parse_data(users_results,  Object.keys(season_results_drivers_data), "total_points_drivers")
 generateTable(table_drivers, table_data_drivers);
 generateTableHead(table_drivers, head_drivers);
 
 
 
-let table_data_teams = parse_data(users_results,  Object.keys(season_results_teams_data))
+let table_data_teams = parse_data(users_results,  Object.keys(season_results_teams_data), "total_points_teams")
+//console.log(table_data_teams)
 generateTable(table_teams, table_data_teams);
 generateTableHead(table_teams, head_teams);
+
+
+generateTable(table_drivers_result, [season_results_drivers_data]);
+generateTableHead(table_drivers_result, head_drivers_res);
+
+generateTable(table_teams_result, [season_results_teams_data]);
+generateTableHead(table_teams_result, head_teams_res);
+
+function parse_for_match_result(data) {
+  let data_bets = Array()
+  let item = Object()
+  for (const [team, drivers] of Object.entries(teams_drivers)) {
+      console.log(data);
+
+      let bet_first = Object.keys(data).find(key => data[key] === drivers[0])
+      let bet_second = Object.keys(data).find(key => data[key] === drivers[1])
+      console.log(bet_first)
+      console.log(bet_first.split("_")[2])
+      console.log(bet_second)
+      rank_first = bet_first.split("_")[2]
+      rank_second = bet_second.split("_")[2]
+      relation = "<"
+      if (rank_first > rank_second) {
+        relation = ">" 
+      }
+      item[team] = drivers[0] + " " + relation + " " + drivers[1]
+      
+   }
+   //console.log(item)
+  data_bets.push(item)
+  return data_bets
+}
+
+table_match_result_data = parse_for_match_result(season_results_drivers_data)
+generateTable(table_match_result, table_match_result_data);
+generateTableHead(table_match_result, head_match_res);
 
 
 //let table_teams = document.querySelector("#teams");
 //generateTable(table_teams, teamsdata, 11, teams_result);
 //generateTableHead(table_teams, head, "KONSTRUKTÉŘI", sums.TEAM);
 
+//users_results, Object.keys(season_results_drivers_data), "total_points_match"
+function parse_for_match(data, bet_types, total_elem) {
+  //console.log(data)
+  let data_bets = Array()
+  for (let elem of data){
+    let item = Object()
+    //console.log(elem)
+    item["username"] = elem.username
+    item["total"] = elem[total_elem]
 
-//let table_teammatch = document.querySelector("#team_match");
+    for (const [team, drivers] of Object.entries(teams_drivers)) {
+      //console.log(team, drivers);
+
+      let bet_first = elem.bets.find((el) => el.value == drivers[0])
+      let bet_second = elem.bets.find((el) => el.value == drivers[1])
+      //console.log(bet_first)
+      //console.log(bet_first.type.split("_")[2])
+      //console.log(bet_second)
+      rank_first = bet_first.type.split("_")[2]
+      rank_second = bet_second.type.split("_")[2]
+      relation = "<"
+      if (rank_first > rank_second) {
+        relation = ">" 
+      }
+      match_ok = ":0b"
+      if (bet_first.match_ok){
+        match_ok = ":1b"
+      }
+      item[team] = drivers[0] + " " + relation + " " + drivers[1] + match_ok
+      
+   }
+   //console.log(item)
+   data_bets.push(item)
+}
+return data_bets
+   
+
+
+
+}
+let table_data_match = parse_for_match(users_results, Object.keys(season_results_drivers_data), "total_points_team_match");
+//console.log(table_data_match)
+generateTable(table_match, table_data_match);
+generateTableHead(table_match, head_match);
+
+
 //generateTableTeamMatch(table_teammatch, team_match_data, 11, team_match_results);
 //generateTableHead(table_teammatch, head_data, "TÝMOVÝ SOUBOJ", sums.TEAM_MATCH);
 

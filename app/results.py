@@ -111,25 +111,28 @@ def evaluate_result_for_user(result, guess):
     return results_map_podium, sum([float(num) for num in results_map_podium.values()])
 
 
-def get_drivers_standings():
-    url = f"{API}driverStandings.json"
-    response = requests.get(url)
-    data = response.json()
-    standings = data["MRData"]["StandingsTable"]["StandingsLists"][0]["DriverStandings"]
-    to_db_items = []
-    for item in standings:
-        points = item["points"]
-        driver = item["Driver"]["code"]
-        if driver in ("DRU", "LAW", "BEA", "COL"):
-            continue
+def get_drivers_standings(client):
+    raw = client.get_driver_standings().result()
+    data = raw["MRData"]["StandingsTable"]["StandingsLists"][0]["DriverStandings"]
+    return {
+        item["Driver"]["driverId"]: {
+            "points": item["points"],
+            "position": item["position"],
+        }
+        for item in data
+    }
 
-        to_db_items.append({"position": None, "points": int(points), "driver": driver})
-    for pos, item in enumerate(
-        sorted(to_db_items, key=lambda d: d["points"], reverse=True), start=1
-    ):
-        item["position"] = pos
 
-    return to_db_items
+def get_constructors_standings(client):
+    raw = client.get_constructor_standings().result()
+    data = raw["MRData"]["StandingsTable"]["StandingsLists"][0]["ConstructorStandings"]
+    return {
+        item["Constructor"]["constructorId"]: {
+            "points": item["points"],
+            "position": item["position"],
+        }
+        for item in data
+    }
 
 
 CONSTRUCTOR_ID_CODE_MAP = {
@@ -146,51 +149,9 @@ CONSTRUCTOR_ID_CODE_MAP = {
 }
 
 
-def get_constructors_standings():
-    url = f"{API}constructorStandings.json"
-    retries = 5
-    while retries:
-        try:
-            response = requests.get(url)
-            data = response.json()
-            break
-        except:
-            retries -= 5
-            # import pdb; pdb.set_trace()
-            print("RETRYING LOAD CONSTR STDGS")
-
-    standings = data["MRData"]["StandingsTable"]["StandingsLists"][0][
-        "ConstructorStandings"
-    ]
-    to_db_items = []
-    for item in standings:
-        points = item["points"]
-        team = CONSTRUCTOR_ID_CODE_MAP[item["Constructor"]["constructorId"]]
-        to_db_items.append({"position": None, "points": int(points), "team": team})
-
-    for pos, item in enumerate(
-        sorted(to_db_items, key=lambda d: d["points"], reverse=True), start=1
-    ):
-        item["position"] = pos
-
-    return to_db_items
-
-
 # SORT BY REAL TEAM STANDIGS
 # for pos in range...staci
 #     item[pos]
-team_drivers_map = {
-    "MER": ("HAM", "RUS"),
-    "REB": ("VER", "PER"),
-    "FER": ("LEC", "SAI"),
-    "MCL": ("NOR", "PIA"),
-    "ALP": ("GAS", "OCO"),
-    "KIK": ("ZHO", "BOT"),
-    "VIS": ("TSU", "RIC"),
-    "HAS": ("HUL", "MAG"),
-    "WIL": ("SAR", "ALB"),
-    "ASM": ("ALO", "STR"),
-}
 
 
 def team_match_results(bet, results):
