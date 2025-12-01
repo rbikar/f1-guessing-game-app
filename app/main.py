@@ -1,3 +1,4 @@
+import enum
 import os
 from collections import OrderedDict, defaultdict
 from time import sleep
@@ -8,7 +9,7 @@ from sqlalchemy import update, select, func
 import pycountry
 from app import db
 from app.models import Bet, Competitor, Race, RaceResult, User
-
+from app.ergast_client.client import Client
 from .results import (
     evaluate_result_for_user,
     get_constructors_standings,
@@ -53,6 +54,20 @@ BET_TYPE_SEASON = {"driver": "SEASON_DRIVER", "team": "SEASON_TEAM"}
 BET_FORM_KEYS = {f"select_driver_{i}" for i in range(1, 21)} | {
     f"select_team_{i}" for i in range(1, 11)
 }
+
+TEAM_MATCH_DRIVERS_MAP = {
+    "MER": ("ANT", "RUS"),
+    "REB": ("VER", "TSU"),
+    "FER": ("LEC", "HAM"),
+    "MCL": ("NOR", "PIA"),
+    "ALP": ("GAS", "DOO"),
+    "KIK": ("HUL", "BOR"),
+    "RBS": ("LAW", "HAD"),
+    "HAS": ("OCO", "BEA"),
+    "WIL": ("SAI", "ALB"),
+    "ASM": ("ALO", "STR"),
+}
+
 
 main = Blueprint("main", __name__)
 
@@ -244,7 +259,7 @@ def season():
     teams = get_competitors_names(type="TEAM")
 
     ### toto pak do pryc :) nebo nechatp ro pro kontrolu
-    #assert len(drivers) == 20
+    # assert len(drivers) == 20
     assert len(teams) == 10
 
     stmt = select(Bet).where(
@@ -403,7 +418,9 @@ def guess_overview_season():
         res = _db_exec(stmt).scalars().all()
 
         item = {"username": user.username, "bets": []}
-        total = 0
+        total_drivers = 0
+        total_teams = 0
+        total_team_match = 0
         for bet in res:
             if bet.value is None:
                 value = None
@@ -419,26 +436,42 @@ def guess_overview_season():
                     "type": f"{bet.type}{"_" + str(bet.rank) if bet.rank is not None else ""}",
                     "points": bet.result,
                     "value": value,
+                    "match_ok": bet.extra == "MATCH OK",
                 }
             )
-            total += bet.result
 
-        item["total_points"] = total
+            if bet.type == "SEASON_DRIVER":
+                total_drivers += bet.result
+                if bet.extra == "MATCH OK":
+                    total_team_match += 0.5
+            elif bet.type == "SEASON_TEAM":
+                total_teams += bet.result
+            else:
+                continue
+
+        item["total_points_drivers"] = total_drivers
+        item["total_points_teams"] = total_teams
+        item["total_points_team_match"] = total_team_match
         out_users.append(item)
 
+    results_drivers_db = sorted(
+        list(get_driver_adjusted_standings().values()), key=lambda x: x["position"]
+    )
     results_drivers = []
     for i in range(1, 21):
         item = {
             "type": f"SEASON_DRIVER_{i}",
-            "value": None,
+            "value": results_drivers_db[i - 1]["code"],
         }
         results_drivers.append(item)
-
+    results_teams_db = sorted(
+        list(get_constr_standings().values()), key=lambda x: x.position
+    )
     results_teams = []
     for i in range(1, 11):
         item = {
             "type": f"SEASON_TEAM_{i}",
-            "value": None,
+            "value": constr_ext_id_name_map[results_teams_db[i - 1].ext_id],
         }
         results_teams.append(item)
 
@@ -449,7 +482,6 @@ def guess_overview_season():
         },
         "users": out_users,
     }
-    ## TODO add team match data
 
     return render_template("guess_overview_season.html", data=response)
 
@@ -634,7 +666,7 @@ def evaluate_result_post(external_circuit_id):
 
             if bet and bonus_ok:
                 bet.result = 2
-                if bet.extra and bet.extra == "JOKER": 
+                if bet.extra and bet.extra == "JOKER":
                     bet.result *= 2
                 db.session.commit()
 
@@ -767,99 +799,81 @@ def results_table(message=None):
     return render_template("results_table.html", rows=rows)
 
 
-def load_standings():
-    drivers_stdgs = get_drivers_standings()
-    sleep(5)
-    team_stdgs = get_constructors_standings()
-    out = "ERROR"
-    _types = ("DRIVER", "TEAM")
-    for _type, stgds in zip(_types, [drivers_stdgs, team_stdgs]):
-        for item in stgds:
-            db_item = (
-                db.session.query(Standings)
-                .filter(Standings.type == _type)
-                .filter(Standings.name == item[_type.lower()])
-                .first()
-            )
+constr_ext_id_name_map = {
+    "alpine": "Alpine F1 Team",
+    "aston_martin": "Aston Martin",
+    "ferrari": "Ferrari",
+    "haas": "Haas F1 Team",
+    "mclaren": "McLaren",
+    "mercedes": "Mercedes",
+    "rb": "RB F1 Team",
+    "red_bull": "Red Bull",
+    "sauber": "Sauber",
+    "williams": "Williams",
+    "Alpine F1 Team": "alpine",
+    "Aston Martin": "aston_martin",
+    "Ferrari": "ferrari",
+    "Haas F1 Team": "haas",
+    "McLaren": "mclaren",
+    "Mercedes": "mercedes",
+    "RB F1 Team": "rb",
+    "Red Bull": "red_bull",
+    "Sauber": "sauber",
+    "Williams": "williams",
+}
 
-            if db_item is None:
-                # create new
-                new_item = Standings(
-                    position=item["position"],
-                    type=_type,
-                    name=item[_type.lower()],
-                    points=item["points"],
-                )
-                db.session.add(new_item)
-                db.session.commit()
-                out = "NEW"
 
+def compute_driver_season(user, standings):
+    stmt = select(Bet).where(Bet.user_id == user.id, Bet.type == "SEASON_DRIVER")
+    bets = _db_exec(stmt).scalars().all()
+    for bet in bets:
+        driver_code_bet = bet.value
+        if (pos := standings[driver_code_bet]["position"]) == bet.rank:
+            if pos == 1:
+                bet.result = 12
             else:
-                db_item.position = item["position"]
-                db_item.name = item[_type.lower()]
-                db_item.points = item["points"]
-                db.session.commit()
-                out = "UPDATE"
-                # update
-    return out
+                bet.result = 2
 
 
-def compute_season_result(users):
-    stdgs = db.session.query(Standings).all()
-
-    drivers = [item for item in stdgs if item.type == "DRIVER"]
-    teams = [item for item in stdgs if item.type == "TEAM"]
-
-    drivers_map = make_results_map(drivers)
-    teams_map = make_results_map(teams)
-
-    out = {}
-    for user in users:
-        bets_for_user = [
-            bet
-            for bet in (
-                db.session.query(SeasonBet).filter(SeasonBet.user_id == user.id).all()
-            )
-        ]
-
-        bet = SeasonBet.serialize(bets_for_user)
-        season_drivers_for_user = season_result(
-            bet["DRIVER"], drivers_map, std_type="DRIVERS"
-        )
-        season_teams_for_user = season_result(bet["TEAM"], teams_map, std_type="TEAMS")
-
-        team_match_for_user = team_match_results(bet["DRIVER"], drivers)
-
-        # total points per user
-        # import pdb; pdb.set_trace()
-        total_points = get_points_for_user(
-            season_drivers_for_user,
-            season_teams_for_user,
-            team_match_for_user,
-        )
-
-        # import pdb;pdb.set_trace()
-
-        out[user.username] = {
-            "total": total_points,
-            "data": {
-                "drivers": season_drivers_for_user,
-                "teams": season_teams_for_user,
-                "team_match": team_match_for_user,
-            },
-        }
-    # import pdb; pdb.set_trace()
-    # detailed points per user
-    return out
+def compute_constr_result(user, standings):
+    stmt = select(Bet).where(Bet.user_id == user.id, Bet.type == "SEASON_TEAM")
+    bets = _db_exec(stmt).scalars().all()
+    for bet in bets:
+        constructor_ext_id_bet = constr_ext_id_name_map[bet.value]
+        if (pos := standings[constructor_ext_id_bet].position) == bet.rank:
+            if pos == 1:
+                bet.result = 7
+            else:
+                bet.result = 2
 
 
-def get_points_for_user(*dicts):
-    out = 0
-    for data in dicts:
-        for item in data.values():
-            out += item["points"]
+def compute_team_match_result(user, standings):
+    stmt = select(Bet).where(Bet.user_id == user.id, Bet.type == "SEASON_DRIVER")
+    bets = _db_exec(stmt).scalars().all()
+    bets_map = {bet.value: bet for bet in bets}
 
-    return out
+    for pair in TEAM_MATCH_DRIVERS_MAP.values():
+        print(pair)
+        sorted_pair = sorted(pair)
+        first_driver = sorted_pair[0]
+        second_driver = sorted_pair[1]
+        first_driver_stdgs = standings[first_driver]["position"]
+        second_driver_stdgs = standings[second_driver]["position"]
+        print("LIVE", first_driver_stdgs, second_driver_stdgs)
+
+        first_driver_bet = bets_map[first_driver].rank
+        second_driver_bet = bets_map[second_driver].rank
+        print("BET", first_driver_bet, second_driver_bet)
+        first_better_bet = first_driver_bet < second_driver_bet
+        first_better_stdgs = first_driver_stdgs < second_driver_stdgs
+        hit = first_better_bet is first_better_stdgs
+        print(f"HIT: {hit}")
+        if hit:
+            bets_map[first_driver].extra = "MATCH OK"
+            bets_map[second_driver].extra = "MATCH OK"
+        else:
+            bets_map[first_driver].extra = "MATCH NOT OK"
+            bets_map[second_driver].extra = "MATCH NOT OK"
 
 
 @main.route("/bet_overview")
@@ -884,13 +898,16 @@ def top_players():
     }
 
     """
-    stmt = select(Bet).where(Bet.type != "SEASON_DRIVER" or Bet.type != "SEASON_TEAM")
+    # stmt = select(Bet).where(Bet.type != "SEASON_DRIVER" or Bet.type != "SEASON_TEAM")
+    stmt = select(Bet)
     # improvement: do sum and group by user on db side
     all_bets = _db_exec(stmt).scalars().all()
 
-    user_result_map = {}
+    user_result_map_races = {}
+    user_result_map_season = {}
+    user_result_map_total = {}
     for bet in all_bets:
-        user_result_map.setdefault(
+        user_result_map_races.setdefault(
             bet.user.username,
             {
                 "username": bet.user.username,
@@ -898,16 +915,50 @@ def top_players():
                 "order": 0,
             },
         )
+        user_result_map_season.setdefault(
+            bet.user.username,
+            {
+                "username": bet.user.username,
+                "points": 0,
+                "order": 0,
+            },
+        )
+        user_result_map_total.setdefault(
+            bet.user.username,
+            {
+                "username": bet.user.username,
+                "points": 0,
+                "order": 0,
+            },
+        )
+        if bet.type in ("SEASON_DRIVER", "SEASON_TEAM"):
+            user_result_map_season[bet.user.username]["points"] += bet.result
+            user_result_map_total[bet.user.username]["points"] += bet.result
+            if bet.extra == "MATCH OK":
+                user_result_map_season[bet.user.username]["points"] += 0.5
+                user_result_map_total[bet.user.username]["points"] += 0.5
 
-        user_result_map[bet.user.username]["points"] += bet.result
+        else:
+            user_result_map_races[bet.user.username]["points"] += bet.result
+            user_result_map_total[bet.user.username]["points"] += bet.result
 
-    user_result = sorted(
-        user_result_map.values(), key=lambda item: item["points"], reverse=True
+    user_result_races = sorted(
+        user_result_map_races.values(), key=lambda item: item["points"], reverse=True
+    )
+    user_result_season = sorted(
+        user_result_map_season.values(), key=lambda item: item["points"], reverse=True
+    )
+    user_result_total = sorted(
+        user_result_map_total.values(), key=lambda item: item["points"], reverse=True
     )
 
     return render_template(
         "current_top_players.html",
-        data=user_result,
+        data={
+            "RACES": user_result_races,
+            "SEASON": user_result_season,
+            "TOTAL": user_result_total,
+        },
     )
 
     sums_for_users = defaultdict(float)  # map user: points
@@ -946,3 +997,81 @@ def top_players():
         "current_top_players.html",
         data=data,
     )
+
+
+# guess_overview/season/load
+@main.route("/guess_overview/season/load")
+@login_required
+def update_standings():
+    with Client("https://api.jolpi.ca/") as client:
+        driver_standings = get_drivers_standings(client)
+        sleep(5)
+        constructor_standings = get_constructors_standings(client)
+        for driver_id, item in driver_standings.items():
+            stmt = (
+                update(Competitor)
+                .where(Competitor.ext_id == driver_id)
+                .values(points=item["points"], position=item["position"])
+            )
+            _db_exec(stmt)
+        for constructor_id, item in constructor_standings.items():
+            stmt = (
+                update(Competitor)
+                .where(Competitor.ext_id == constructor_id)
+                .values(points=item["points"], position=item["position"])
+            )
+            _db_exec(stmt)
+        db.session.commit()
+
+    return {"status": "standings updated"}
+
+
+@main.route("/compute_season")
+@login_required
+def compute_season_route():
+    # import pdb; pdb.set_trace()
+    stmt = select(User)
+    users = _db_exec(stmt).scalars().all()
+
+    adjusted_drivers_standings = get_driver_adjusted_standings()
+    constructors_standings_map = get_constr_standings()
+
+    for user in users:
+        compute_driver_season(user, adjusted_drivers_standings)
+        compute_constr_result(user, constructors_standings_map)
+        compute_team_match_result(user, adjusted_drivers_standings)
+    db.session.commit()
+    return {"status": "season computed"}
+
+
+def get_driver_adjusted_standings():
+    stmt = (
+        select(Competitor)
+        .where(Competitor.type == "DRIVER")
+        .order_by(Competitor.position)
+    )  # sort by  position ascending
+    drivers_standings = _db_exec(stmt).scalars().all()
+    adjusted_drivers_standings = {}
+    pos = 1
+    for item in drivers_standings:
+        if item.code == "COL":
+            continue
+        adjusted_drivers_standings[item.code] = {
+            "points": item.points,
+            "position": pos,
+            "ext_id": item.ext_id,
+            "code": item.code,
+        }
+        pos += 1
+    return adjusted_drivers_standings
+
+
+def get_constr_standings():
+    stmt = (
+        select(Competitor)
+        .where(Competitor.type == "TEAM")
+        .order_by(Competitor.position)
+    )  # sort by  position ascending
+    constructors_standings = _db_exec(stmt).scalars().all()
+    constructors_standings_map = {item.ext_id: item for item in constructors_standings}
+    return constructors_standings_map
