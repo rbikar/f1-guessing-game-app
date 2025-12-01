@@ -1040,7 +1040,7 @@ def compute_season_route():
         compute_driver_season(user, adjusted_drivers_standings)
         compute_constr_result(user, constructors_standings_map)
         compute_team_match_result(user, adjusted_drivers_standings)
-    db.session.commit()
+        db.session.commit()
     return {"status": "season computed"}
 
 
