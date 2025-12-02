@@ -187,17 +187,17 @@ function parse_for_match_result(data) {
   let item = Object()
   for (const [team, drivers] of Object.entries(teams_drivers)) {
       console.log(data);
-
+      drivers.sort()
       let bet_first = Object.keys(data).find(key => data[key] === drivers[0])
       let bet_second = Object.keys(data).find(key => data[key] === drivers[1])
       console.log(bet_first)
       console.log(bet_first.split("_")[2])
       console.log(bet_second)
-      rank_first = bet_first.split("_")[2]
-      rank_second = bet_second.split("_")[2]
-      relation = "<"
-      if (rank_first > rank_second) {
-        relation = ">" 
+      rank_first = parseInt(bet_first.split("_")[2])
+      rank_second = parseInt(bet_second.split("_")[2])
+      relation = ">"
+      if (rank_first < rank_second) {
+        relation = "<" 
       }
       item[team] = drivers[0] + " " + relation + " " + drivers[1]
       
@@ -228,17 +228,17 @@ function parse_for_match(data, bet_types, total_elem) {
 
     for (const [team, drivers] of Object.entries(teams_drivers)) {
       //console.log(team, drivers);
-
+      drivers.sort()
       let bet_first = elem.bets.find((el) => el.value == drivers[0])
       let bet_second = elem.bets.find((el) => el.value == drivers[1])
       //console.log(bet_first)
       //console.log(bet_first.type.split("_")[2])
       //console.log(bet_second)
-      rank_first = bet_first.type.split("_")[2]
-      rank_second = bet_second.type.split("_")[2]
-      relation = "<"
-      if (rank_first > rank_second) {
-        relation = ">" 
+      rank_first = parseInt(bet_first.type.split("_")[2])
+      rank_second = parseInt(bet_second.type.split("_")[2])
+      relation = ">"
+      if (rank_first < rank_second) {
+        relation = "<" 
       }
       match_ok = ":0b"
       if (bet_first.match_ok){
