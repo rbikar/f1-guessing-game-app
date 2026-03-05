@@ -88,13 +88,13 @@ def is_bet_locked(bet_type, locks):
 ###### nasl se bude predelavat
 def get_label_attr_season():
     drivers = []
-    for num in range(1, 21):
+    for num in range(1, 23):
         label = f"{num}."
         attr = f"_{num}d"
         drivers.append({"label": label, "attr": attr})
 
     constructors = []
-    for num in range(1, 11):
+    for num in range(1, 12):
         label = f"{num}."
         attr = f"_{num}c"
         constructors.append({"label": label, "attr": attr})
