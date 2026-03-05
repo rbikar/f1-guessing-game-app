@@ -9,7 +9,7 @@ from time import sleep
 LOG = logging.getLogger(__name__)
 
 API = "ergast/f1"
-YEAR = 2025
+YEAR = 2026
 
 REQUESTS_MAX_WORKERS = int(os.getenv("F1_ERGAST_REQUESTS_MAX_WORKERS", "4"))
 SLEEP_SECONDS = 2

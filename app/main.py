@@ -51,21 +51,22 @@ MAX_JOKERS = 3
 
 
 BET_TYPE_SEASON = {"driver": "SEASON_DRIVER", "team": "SEASON_TEAM"}
-BET_FORM_KEYS = {f"select_driver_{i}" for i in range(1, 21)} | {
+BET_FORM_KEYS = {f"select_driver_{i}" for i in range(1, 23)} | {
     f"select_team_{i}" for i in range(1, 11)
 }
 
 TEAM_MATCH_DRIVERS_MAP = {
     "MER": ("ANT", "RUS"),
-    "REB": ("VER", "TSU"),
+    "REB": ("VER", "HAD"),
     "FER": ("LEC", "HAM"),
     "MCL": ("NOR", "PIA"),
-    "ALP": ("GAS", "DOO"),
-    "KIK": ("HUL", "BOR"),
-    "RBS": ("LAW", "HAD"),
+    "ALP": ("GAS", "COL"),
+    "AUD": ("HUL", "BOR"),
+    "RBS": ("LAW", "LIN"),
     "HAS": ("OCO", "BEA"),
     "WIL": ("SAI", "ALB"),
     "ASM": ("ALO", "STR"),
+    "CAD": ("PER", "BOT"),
 }
 
 
@@ -260,7 +261,7 @@ def season():
 
     ### toto pak do pryc :) nebo nechatp ro pro kontrolu
     # assert len(drivers) == 20
-    assert len(teams) == 10
+    assert len(teams) == 11
 
     stmt = select(Bet).where(
         Bet.user_id == current_user.id,
@@ -458,7 +459,7 @@ def guess_overview_season():
         list(get_driver_adjusted_standings().values()), key=lambda x: x["position"]
     )
     results_drivers = []
-    for i in range(1, 21):
+    for i in range(1, 23):
         item = {
             "type": f"SEASON_DRIVER_{i}",
             "value": results_drivers_db[i - 1]["code"],
@@ -468,7 +469,7 @@ def guess_overview_season():
         list(get_constr_standings().values()), key=lambda x: x.position
     )
     results_teams = []
-    for i in range(1, 11):
+    for i in range(1, 12):
         item = {
             "type": f"SEASON_TEAM_{i}",
             "value": constr_ext_id_name_map[results_teams_db[i - 1].ext_id],
@@ -818,8 +819,11 @@ constr_ext_id_name_map = {
     "Mercedes": "mercedes",
     "RB F1 Team": "rb",
     "Red Bull": "red_bull",
-    "Sauber": "sauber",
     "Williams": "williams",
+    "Audi": "audi",
+    "Cadillac F1 Team": "cadillac"
+
+
 }
 
 

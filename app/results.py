@@ -202,7 +202,7 @@ def get_position_for_driver_from_standings(driver, results):
 def get_position_from_season_bet(driver, bet):
     if bet is None:
         return "N/A"
-    for pos in range(1, 21):
+    for pos in range(1, 23):
         bet_on_position = bet.get(pos, "")
         if bet_on_position == driver:
             return int(pos)
@@ -230,13 +230,13 @@ def season_result(bet, results_map, std_type=None):
             "hit": 2,
             "team_match": 1,
             "type": "d",
-            "range": 20,
+            "range": 22,
         },
         "teams": {
             "champion": 5,
             "hit": 2,
             "type": "c",
-            "range": 10,
+            "range": 11,
         },
     }
     # import pdb; pdb.set_trace()
