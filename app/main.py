@@ -228,7 +228,7 @@ def races():
     stmt = db.select(Race)
     races = _db_exec(stmt).scalars().all()
     currrent_race = get_current_race()
-    table_head = ["F1 2025", "SPRINT", "KVALIFIKACE", "ZÁVOD", ""]
+    table_head = ["F1 2026", "SPRINT", "KVALIFIKACE", "ZÁVOD", ""]
     finished = []
     current = []
     upcoming = []
