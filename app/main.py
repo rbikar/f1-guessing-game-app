@@ -397,9 +397,9 @@ def bet_result(external_circuit_id):
 @main.route("/guess_overview/season")
 @login_required
 def guess_overview_season():
-    # results_available = bool(os.getenv("SEASON_RESULTS", ""))
-    # if not results_available:
-    #    return render_template("wip.html")
+    results_available = bool(os.getenv("SEASON_RESULTS", ""))
+    if not results_available:
+        return render_template("wip.html")
 
     out_results = {"results": []}
 
@@ -460,20 +460,30 @@ def guess_overview_season():
     )
     results_drivers = []
     for i in range(1, 23):
-        item = {
-            "type": f"SEASON_DRIVER_{i}",
-            "value": results_drivers_db[i - 1]["code"],
-        }
+        if results_drivers:
+            item = {
+                "type": f"SEASON_DRIVER_{i}",
+                "value": results_drivers_db[i - 1]["code"],
+            }
+        else: item = {
+                "type": f"SEASON_DRIVER_{i}",
+                "value": "N/A",
+            }
         results_drivers.append(item)
     results_teams_db = sorted(
         list(get_constr_standings().values()), key=lambda x: x.position
     )
     results_teams = []
     for i in range(1, 12):
-        item = {
+        if results_teams_db:
+            item = {
             "type": f"SEASON_TEAM_{i}",
-            "value": constr_ext_id_name_map[results_teams_db[i - 1].ext_id],
-        }
+                "value": constr_ext_id_name_map[results_teams_db[i - 1].ext_id],
+            }
+        else: item = {
+                "type": f"SEASON_TEAM_{i}",
+                "value": "N/A",
+            }
         results_teams.append(item)
 
     response = {
