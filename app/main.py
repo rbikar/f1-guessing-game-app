@@ -52,7 +52,7 @@ MAX_JOKERS = 3
 
 BET_TYPE_SEASON = {"driver": "SEASON_DRIVER", "team": "SEASON_TEAM"}
 BET_FORM_KEYS = {f"select_driver_{i}" for i in range(1, 23)} | {
-    f"select_team_{i}" for i in range(1, 11)
+    f"select_team_{i}" for i in range(1, 12)
 }
 
 TEAM_MATCH_DRIVERS_MAP = {
